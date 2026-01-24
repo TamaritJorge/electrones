@@ -1,101 +1,185 @@
 // Ruta: components/dashboard/BalanceCard.tsx
-'use client' // <--- Ahora es interactivo
+'use client'
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FaBolt, FaPen, FaCheck, FaTimes } from 'react-icons/fa'
+import { FaBolt, FaPen, FaCheck, FaTimes, FaUserCircle, FaCamera } from 'react-icons/fa'
 import { useRouter } from 'next/navigation'
 
 interface BalanceCardProps {
   userId: string
   initialNickname: string | null
   initialFullName: string | null
+  initialAvatarUrl: string | null
   balance: number
 }
 
-export default function BalanceCard({ userId, initialNickname, initialFullName, balance }: BalanceCardProps) {
+export default function BalanceCard({ 
+  userId, 
+  initialNickname, 
+  initialFullName, 
+  initialAvatarUrl,
+  balance 
+}: BalanceCardProps) {
   const supabase = createClient()
   const router = useRouter()
 
-  // Estados para controlar la edición
   const [isEditing, setIsEditing] = useState(false)
-  const [nickname, setNickname] = useState(initialNickname || initialFullName || 'Estudiante')
-  const [tempNickname, setTempNickname] = useState(nickname)
   const [loading, setLoading] = useState(false)
+  
+  // Estados para los datos
+  const [nickname, setNickname] = useState(initialNickname || initialFullName || 'Estudiante')
+  const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl || '')
+  
+  // Estados temporales para la edición
+  const [tempNickname, setTempNickname] = useState(nickname)
+  const [tempAvatarUrl, setTempAvatarUrl] = useState(avatarUrl)
 
   const handleSave = async () => {
-    if (!tempNickname.trim()) return
     setLoading(true)
 
-    // Guardamos en Supabase
+    // Guardamos nickname y avatar_url en Supabase
+    // (Recuerda que ya dimos permiso en SQL para editar estas dos columnas)
     const { error } = await supabase
       .from('profiles')
-      .update({ nickname: tempNickname })
+      .update({ 
+        nickname: tempNickname,
+        avatar_url: tempAvatarUrl 
+      })
       .eq('id', userId)
 
     if (!error) {
       setNickname(tempNickname)
+      setAvatarUrl(tempAvatarUrl)
       setIsEditing(false)
-      router.refresh() // Refresca la página para que todos los datos estén sincronizados
+      router.refresh() // Actualiza la página y el Header
     } else {
-      console.error('Error actualizando nickname:', error)
-      alert('No se pudo actualizar el nombre')
+      console.error('Error actualizando perfil:', error)
+      alert('Error al guardar los cambios')
     }
     setLoading(false)
   }
 
-  return (
-    <div className="w-full bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 shadow-xl text-white relative overflow-hidden transition-all">
-      {/* Decoración de fondo */}
-      <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-10 blur-xl"></div>
-      <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-white opacity-10 blur-xl"></div>
+  const handleCancel = () => {
+    setIsEditing(false)
+    setTempNickname(nickname)
+    setTempAvatarUrl(avatarUrl)
+  }
 
-      <div className="relative z-10">
+  return (
+    <div className="w-full bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 shadow-2xl text-white relative overflow-hidden">
+      
+      {/* Decoración de fondo */}
+      <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 rounded-full bg-white opacity-5 blur-2xl"></div>
+      <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 rounded-full bg-white opacity-5 blur-2xl"></div>
+
+      <div className="relative z-10 flex flex-col gap-6">
         
-        {/* ZONA DE NOMBRE EDITABLE */}
-        <div className="flex items-center gap-3 h-8">
-          {isEditing ? (
-            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
-              <input 
-                type="text" 
-                value={tempNickname}
-                onChange={(e) => setTempNickname(e.target.value)}
-                className="bg-white/20 border border-white/30 rounded px-2 py-1 text-sm text-white placeholder-white/50 focus:outline-none focus:bg-white/30 w-40"
-                autoFocus
-                disabled={loading}
-              />
-              <button onClick={handleSave} disabled={loading} className="p-1.5 hover:bg-green-500/20 rounded-full text-green-300 transition-colors">
-                <FaCheck size={14} />
-              </button>
-              <button onClick={() => setIsEditing(false)} disabled={loading} className="p-1.5 hover:bg-red-500/20 rounded-full text-red-300 transition-colors">
-                <FaTimes size={14} />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 group">
-              <h2 className="text-lg font-medium opacity-90">Hola, <span className="font-bold">{nickname}</span></h2>
-              <button 
-                onClick={() => {
-                  setTempNickname(nickname)
-                  setIsEditing(true)
+        {/* CABECERA DE LA TARJETA: FOTO Y NOMBRE */}
+        <div className="flex items-start gap-4">
+          
+          {/* FOTO DE PERFIL */}
+          <div className="relative group shrink-0">
+            {avatarUrl ? (
+              <img 
+                src={avatarUrl} 
+                alt="Avatar" 
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-white/20 shadow-md bg-slate-800"
+                onError={(e) => {
+                  // Si la URL falla, ocultamos la imagen
+                  (e.target as HTMLImageElement).style.display = 'none';
                 }}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-white/10 rounded-full text-white/70 hover:text-white"
-                title="Editar nombre"
-              >
-                <FaPen size={12} />
-              </button>
-            </div>
-          )}
-        </div>
-        
-        <div className="mt-6">
-          <p className="text-sm text-indigo-200 uppercase tracking-wider font-semibold">Saldo Actual</p>
-          <div className="flex items-center gap-3 mt-1">
-            <FaBolt className="text-yellow-400 text-4xl animate-pulse" />
-            <span className="text-5xl font-bold tracking-tight">{balance}</span>
-            <span className="text-xl self-end mb-2 font-medium opacity-80">Electrones</span>
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center border-2 border-white/20">
+                <FaUserCircle size={32} className="text-white/60" />
+              </div>
+            )}
+          </div>
+
+          {/* NOMBRE Y EDICIÓN */}
+          <div className="flex-1 min-w-0 pt-1">
+            {isEditing ? (
+              <div className="flex flex-col gap-3 animate-in fade-in duration-200">
+                {/* Input Nickname */}
+                <div>
+                  <label className="text-xs text-indigo-200 font-bold uppercase ml-1">Apodo</label>
+                  <input 
+                    type="text" 
+                    value={tempNickname}
+                    onChange={(e) => setTempNickname(e.target.value)}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/40 focus:bg-black/30 transition-all"
+                    placeholder="Tu apodo..."
+                  />
+                </div>
+
+                {/* Input URL Avatar */}
+                <div>
+                  <label className="text-xs text-indigo-200 font-bold uppercase ml-1 flex items-center gap-1">
+                    <FaCamera size={10} /> URL Imagen
+                  </label>
+                  <input 
+                    type="text" 
+                    value={tempAvatarUrl}
+                    onChange={(e) => setTempAvatarUrl(e.target.value)}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 placeholder-white/30 focus:outline-none focus:border-white/40 focus:bg-black/30 transition-all"
+                    placeholder="https://..."
+                  />
+                </div>
+
+                {/* Botones de acción */}
+                <div className="flex gap-2 mt-1">
+                  <button 
+                    onClick={handleSave} 
+                    disabled={loading}
+                    className="flex-1 bg-green-500/80 hover:bg-green-500 text-white text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <FaCheck /> Guardar
+                  </button>
+                  <button 
+                    onClick={handleCancel}
+                    disabled={loading} 
+                    className="flex-1 bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <FaTimes /> Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // VISTA NORMAL
+              <div>
+                <div className="flex items-center gap-2 group">
+                  <h2 className="text-xl font-bold truncate leading-tight">
+                    {nickname}
+                  </h2>
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="opacity-60 hover:opacity-100 transition-opacity p-1.5 hover:bg-white/10 rounded-full"
+                  >
+                    <FaPen size={12} />
+                  </button>
+                </div>
+                <p className="text-indigo-200 text-xs mt-0.5 truncate">{initialFullName}</p>
+              </div>
+            )}
           </div>
         </div>
+        
+        {/* SALDO (Solo se muestra si NO estamos editando para ahorrar espacio, o siempre si prefieres) */}
+        {!isEditing && (
+          <div className="mt-2 bg-black/20 rounded-2xl p-4 flex items-center justify-between border border-white/5">
+            <div>
+              <p className="text-indigo-200 text-xs font-bold uppercase tracking-wider">Saldo Disponible</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-4xl font-bold tracking-tight">{balance}</span>
+              </div>
+            </div>
+            <div className="h-10 w-10 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg shadow-yellow-400/20 animate-pulse">
+              <FaBolt className="text-slate-900 text-xl" />
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )

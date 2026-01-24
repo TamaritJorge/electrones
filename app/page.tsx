@@ -29,23 +29,22 @@ export default async function DashboardPage() {
     .limit(10)
 
   return (
-    <main className="min-h-screen bg-slate-900 px-4 py-8">
-      <div className="max-w-md mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-xl font-bold text-white">Mi Dashboard</h1>
-        </div>
-
-        {/* Pasamos los datos nuevos a la tarjeta */}
+    <main className="min-h-screen bg-slate-900 px-4 py-6">
+      <div className="max-w-md mx-auto space-y-6">
+        
+        {/* BalanceCard ahora recibe también la URL del avatar */}
         <BalanceCard 
-          userId={user.id} // <--- NECESARIO PARA EL UPDATE
-          initialNickname={profile?.nickname} // <--- PREFERIMOS NICKNAME
-          initialFullName={profile?.full_name} // <--- FALLBACK
+          userId={user.id} 
+          initialNickname={profile?.nickname} 
+          initialFullName={profile?.full_name} 
+          initialAvatarUrl={profile?.avatar_url} // <--- NUEVO
           balance={profile?.current_balance ?? 0} 
         />
 
         <TransactionList 
           transactions={transactions || []} 
         />
+        
       </div>
     </main>
   )
