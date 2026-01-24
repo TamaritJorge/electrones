@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Electrones UJI",
+  title: "Electrones",
   description: "Monedero virtual para estudiantes",
 };
 

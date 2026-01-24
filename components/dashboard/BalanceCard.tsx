@@ -39,7 +39,6 @@ export default function BalanceCard({
     setLoading(true)
 
     // Guardamos nickname y avatar_url en Supabase
-    // (Recuerda que ya dimos permiso en SQL para editar estas dos columnas)
     const { error } = await supabase
       .from('profiles')
       .update({ 
@@ -52,7 +51,14 @@ export default function BalanceCard({
       setNickname(tempNickname)
       setAvatarUrl(tempAvatarUrl)
       setIsEditing(false)
-      router.refresh() // Actualiza la página y el Header
+
+      // 👇 NUEVO: Enviamos la señal al Header para que se actualice al instante
+      const event = new CustomEvent('profile_updated', { 
+        detail: { avatar_url: tempAvatarUrl } 
+      });
+      window.dispatchEvent(event);
+
+      router.refresh() // Refresca los datos del servidor por si acaso
     } else {
       console.error('Error actualizando perfil:', error)
       alert('Error al guardar los cambios')
@@ -86,7 +92,6 @@ export default function BalanceCard({
                 alt="Avatar" 
                 className="w-16 h-16 rounded-2xl object-cover border-2 border-white/20 shadow-md bg-slate-800"
                 onError={(e) => {
-                  // Si la URL falla, ocultamos la imagen
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
               />
@@ -165,7 +170,7 @@ export default function BalanceCard({
           </div>
         </div>
         
-        {/* SALDO (Solo se muestra si NO estamos editando para ahorrar espacio, o siempre si prefieres) */}
+        {/* SALDO */}
         {!isEditing && (
           <div className="mt-2 bg-black/20 rounded-2xl p-4 flex items-center justify-between border border-white/5">
             <div>

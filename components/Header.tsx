@@ -7,24 +7,19 @@ import { FaSignOutAlt, FaUserCircle } from 'react-icons/fa'
 import { useState, useEffect } from 'react'
 
 export default function Header() {
+  // 1. PRIMERO: Todos los Hooks
   const router = useRouter()
   const pathname = usePathname()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
-  // Ocultar el header en la página de login
-  if (pathname === '/login') return null
-
-  // Efecto para cargar el avatar al montar el componente
+  // Efecto para cargar el avatar Y escuchar cambios
   useEffect(() => {
+    const supabase = createClient()
+
     const fetchAvatar = async () => {
-      const supabase = createClient()
-      
-      // 1. Verificamos quién es el usuario actual
       const { data: { user } } = await supabase.auth.getUser()
-      
       if (user) {
-        // 2. Buscamos su foto en la tabla profiles
         const { data } = await supabase
           .from('profiles')
           .select('avatar_url')
@@ -38,8 +33,24 @@ export default function Header() {
     }
 
     fetchAvatar()
-  }, []) // El array vacío [] significa: "Ejecuta esto solo una vez al cargar"
 
+    const handleProfileUpdate = (event: any) => {
+      if (event.detail?.avatar_url) {
+        setAvatarUrl(event.detail.avatar_url)
+      }
+    }
+
+    window.addEventListener('profile_updated', handleProfileUpdate)
+
+    return () => {
+      window.removeEventListener('profile_updated', handleProfileUpdate)
+    }
+  }, []) 
+
+  // 2. SEGUNDO: Ahora sí, podemos decidir si mostramos el componente o no
+  if (pathname === '/login') return null
+
+  // 3. TERCERO: Funciones auxiliares y renderizado
   const handleLogout = async () => {
     setIsLoggingOut(true)
     const supabase = createClient()
@@ -54,24 +65,18 @@ export default function Header() {
         
         {/* PARTE IZQUIERDA: Avatar + Nombre App */}
         <div className="flex items-center gap-3">
-          
-          {/* El Avatar */}
           <div className="relative">
             {avatarUrl ? (
-              // Si tenemos foto, la mostramos
               <img 
                 src={avatarUrl} 
                 alt="Perfil" 
                 className="w-9 h-9 rounded-full border-2 border-yellow-400/50 object-cover"
               />
             ) : (
-              // Si NO hay foto (o está cargando), mostramos un icono genérico
               <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border-2 border-slate-700 text-slate-400">
                 <FaUserCircle size={24} />
               </div>
             )}
-            
-            {/* Punto verde de "Online" (Decorativo) */}
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-slate-900 rounded-full"></span>
           </div>
 
