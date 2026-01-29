@@ -3,7 +3,6 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-// 👇 Añado FaTrophy a los imports
 import { FaBolt, FaPen, FaCheck, FaTimes, FaUserCircle, FaCamera, FaTrophy } from 'react-icons/fa'
 import { useRouter } from 'next/navigation'
 
@@ -13,7 +12,8 @@ interface BalanceCardProps {
   initialFullName: string | null
   initialAvatarUrl: string | null
   balance: number
-  lifetimeScore: number // <--- NUEVO CAMPO
+  lifetimeScore: number
+  groupName: string | null // 👈 NUEVO CAMPO AÑADIDO
 }
 
 export default function BalanceCard({ 
@@ -22,7 +22,8 @@ export default function BalanceCard({
   initialFullName, 
   initialAvatarUrl,
   balance,
-  lifetimeScore // <--- RECIBIMOS EL DATO
+  lifetimeScore,
+  groupName // 👈 RECIBIMOS EL DATO
 }: BalanceCardProps) {
   const supabase = createClient()
   const router = useRouter()
@@ -41,14 +42,12 @@ export default function BalanceCard({
   const handleSave = async () => {
     setLoading(true)
 
-    // Guardamos nickname y avatar_url en Supabase
-    const { error } = await supabase
-      .from('profiles')
-      .update({ 
-        nickname: tempNickname,
-        avatar_url: tempAvatarUrl 
-      })
-      .eq('id', userId)
+    // 🔒 CAMBIO DE SEGURIDAD:
+    // En lugar de .update() directo a la tabla, llamamos a la función segura (RPC)
+    const { error } = await supabase.rpc('update_own_profile_info', {
+      new_nickname: tempNickname,
+      new_avatar_url: tempAvatarUrl
+    })
 
     if (!error) {
       setNickname(tempNickname)
@@ -64,7 +63,7 @@ export default function BalanceCard({
       router.refresh() 
     } else {
       console.error('Error actualizando perfil:', error)
-      alert('Error al guardar los cambios')
+      alert('Error al guardar los cambios. Inténtalo de nuevo.')
     }
     setLoading(false)
   }
@@ -168,6 +167,14 @@ export default function BalanceCard({
                   </button>
                 </div>
                 <p className="text-indigo-200 text-xs mt-0.5 truncate">{initialFullName}</p>
+                
+                {/* 👇 AÑADIDO: VISUALIZACIÓN DEL GRUPO */}
+                {groupName && (
+                  <p className="text-indigo-300/70 text-[10px] uppercase font-bold tracking-wide mt-1 truncate border-l-2 border-indigo-400/30 pl-2">
+                    {groupName}
+                  </p>
+                )}
+                
               </div>
             )}
           </div>
