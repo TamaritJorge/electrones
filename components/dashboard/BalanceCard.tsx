@@ -3,7 +3,8 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FaBolt, FaPen, FaCheck, FaTimes, FaUserCircle, FaCamera } from 'react-icons/fa'
+// 👇 Añado FaTrophy a los imports
+import { FaBolt, FaPen, FaCheck, FaTimes, FaUserCircle, FaCamera, FaTrophy } from 'react-icons/fa'
 import { useRouter } from 'next/navigation'
 
 interface BalanceCardProps {
@@ -12,6 +13,7 @@ interface BalanceCardProps {
   initialFullName: string | null
   initialAvatarUrl: string | null
   balance: number
+  lifetimeScore: number // <--- NUEVO CAMPO
 }
 
 export default function BalanceCard({ 
@@ -19,7 +21,8 @@ export default function BalanceCard({
   initialNickname, 
   initialFullName, 
   initialAvatarUrl,
-  balance 
+  balance,
+  lifetimeScore // <--- RECIBIMOS EL DATO
 }: BalanceCardProps) {
   const supabase = createClient()
   const router = useRouter()
@@ -52,13 +55,13 @@ export default function BalanceCard({
       setAvatarUrl(tempAvatarUrl)
       setIsEditing(false)
 
-      // 👇 NUEVO: Enviamos la señal al Header para que se actualice al instante
+      // Enviamos la señal al Header para que se actualice al instante
       const event = new CustomEvent('profile_updated', { 
         detail: { avatar_url: tempAvatarUrl } 
       });
       window.dispatchEvent(event);
 
-      router.refresh() // Refresca los datos del servidor por si acaso
+      router.refresh() 
     } else {
       console.error('Error actualizando perfil:', error)
       alert('Error al guardar los cambios')
@@ -170,18 +173,30 @@ export default function BalanceCard({
           </div>
         </div>
         
-        {/* SALDO */}
+        {/* PARTE INFERIOR: SALDO Y NIVEL (Solo visible si no editamos) */}
         {!isEditing && (
-          <div className="mt-2 bg-black/20 rounded-2xl p-4 flex items-center justify-between border border-white/5">
-            <div>
-              <p className="text-indigo-200 text-xs font-bold uppercase tracking-wider">Saldo Disponible</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold tracking-tight">{balance}</span>
+          <div className="flex items-stretch gap-3 mt-2">
+            
+            {/* 1. Saldo Disponible (Grande) */}
+            <div className="flex-1 bg-black/20 rounded-2xl p-4 flex items-center justify-between border border-white/5 relative overflow-hidden">
+              <div className="relative z-10">
+                <p className="text-indigo-200 text-xs font-bold uppercase tracking-wider">Disponible</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold tracking-tight">{balance}</span>
+                </div>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg shadow-yellow-400/20 animate-pulse relative z-10">
+                <FaBolt className="text-slate-900 text-xl" />
               </div>
             </div>
-            <div className="h-10 w-10 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg shadow-yellow-400/20 animate-pulse">
-              <FaBolt className="text-slate-900 text-xl" />
+
+            {/* 2. Lifetime Score (Pequeño / Nivel) */}
+            <div className="bg-white/10 rounded-2xl p-3 flex flex-col items-center justify-center border border-white/5 w-24 text-center">
+              <FaTrophy className="text-yellow-400 mb-1" size={14} />
+              <span className="text-lg font-bold leading-none">{lifetimeScore}</span>
+              <span className="text-[10px] text-indigo-200 uppercase font-bold mt-1">Total</span>
             </div>
+
           </div>
         )}
 
