@@ -38,7 +38,6 @@ export default async function AdminPage() {
           <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
             Panel de Profesor
           </h1>
-          <p className="text-slate-400">Repartir puntos</p>
         </div>
 
         {/* Cargamos la parte interactiva */}

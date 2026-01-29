@@ -3,9 +3,9 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FaSearch, FaUserGraduate, FaTimes, FaCheck, FaBolt, FaChalkboardTeacher, FaBug, FaHistory, FaExternalLinkAlt } from 'react-icons/fa'
+import { FaSearch, FaUserGraduate, FaTimes, FaBolt, FaChalkboardTeacher, FaBug, FaHistory, FaExternalLinkAlt, FaQrcode, FaArrowRight } from 'react-icons/fa'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link' // <--- Necesario para el botón de historial
+import Link from 'next/link'
 
 export default function AdminDashboard({ initialStudents }: { initialStudents: any[] }) {
   const supabase = createClient()
@@ -19,7 +19,6 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
   const [amount, setAmount] = useState('')
   const [concept, setConcept] = useState('')
 
-  // 1. MEJORA: BUSCADOR INCLUYE EMAIL
   const filteredStudents = initialStudents.filter(s => 
     s.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.nickname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -58,6 +57,32 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
 
   return (
     <div>
+      {/* 🚀 NUEVA SECCIÓN: ACCIONES RÁPIDAS (QR) */}
+      <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Link 
+          href="/admin/qr"
+          className="group relative overflow-hidden p-6 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl border border-white/10 shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300"
+        >
+          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
+          
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm shadow-inner">
+                <FaQrcode className="text-white text-2xl" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white leading-none">Generar QR</h3>
+                <p className="text-blue-100 text-sm mt-1 opacity-90">Crear código de asistencia</p>
+              </div>
+            </div>
+            
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+              <FaArrowRight className="text-white group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        </Link>
+      </div>
+
       {/* 🔍 BUSCADOR */}
       <div className="relative mb-6 sticky top-4 z-10">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -72,7 +97,7 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
         />
       </div>
 
-      {/* 📋 LISTA DE ALUMNOS */}
+      {/* 📋 LISTA DE ALUMNOS (Sin cambios) */}
       <div className="grid gap-3">
         {filteredStudents.length === 0 && (
           <p className="text-center text-slate-500 py-8">No se encontraron alumnos</p>
@@ -99,7 +124,6 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
               
               <div className="flex flex-col">
                 <span className="font-bold text-white text-lg leading-tight">{student.nickname || 'Sin Apodo'}</span>
-                {/* Mostramos el nombre real pequeño */}
                 <span className="text-xs text-slate-400">{student.full_name}</span>
               </div>
             </div>
@@ -112,7 +136,7 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
         ))}
       </div>
 
-      {/* 🛠 MODAL DE GESTIÓN */}
+      {/* 🛠 MODAL DE GESTIÓN (Sin cambios significativos, solo mantenido por contexto) */}
       {selectedStudent && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-slate-800 w-full max-w-md sm:rounded-2xl rounded-t-3xl p-6 border-t sm:border border-slate-700 animate-in slide-in-from-bottom-10 shadow-2xl overflow-y-auto max-h-[90vh]">
@@ -121,8 +145,6 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
               <div>
                 <h3 className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Enviando puntos a</h3>
                 <h2 className="text-2xl font-bold text-white leading-none">{selectedStudent.nickname}</h2>
-                
-                {/* 2. MEJORA: DATOS COMPLETOS EN LA FICHA */}
                 <div className="mt-2 text-sm text-slate-300 space-y-0.5">
                    <p>{selectedStudent.full_name}</p>
                    <p className="text-slate-500 text-xs font-mono">{selectedStudent.email}</p>
@@ -134,7 +156,6 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
               </button>
             </div>
 
-            {/* 3. MEJORA: BOTÓN VER HISTORIAL */}
             <div className="mb-6">
                <Link 
                  href={`/admin/history/${selectedStudent.id}`}
@@ -144,7 +165,6 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
                </Link>
             </div>
 
-            {/* BOTONES RÁPIDOS */}
             <div className="grid grid-cols-2 gap-3 mb-6">
               <button 
                 onClick={() => applyPreset('50', 'Detector de Errores')}
@@ -165,7 +185,6 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
               </button>
             </div>
 
-            {/* Inputs Manuales */}
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-1">
@@ -195,7 +214,6 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
               </div>
             </div>
 
-            {/* Botón Acción */}
             <button 
               onClick={handleTransaction}
               disabled={loading || !amount || !concept}
