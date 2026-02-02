@@ -3,20 +3,22 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FaHome, FaShoppingCart, FaTrophy, FaQrcode, FaMedal } from 'react-icons/fa'
+// Mantenemos los de FontAwesome
+import { FaHome, FaShoppingCart, FaTrophy, FaQrcode } from 'react-icons/fa'
+// Añadimos la mochila de Bootstrap Icons 🎒
+import { BsBackpackFill } from 'react-icons/bs'
 
 export default function BottomNav() {
   const pathname = usePathname()
 
-  // Si estamos en el login, NO mostramos el menú
   if (pathname === '/login') return null
 
-  // Definición de los botones
   const navItems = [
     { name: 'Tienda', href: '/shop', icon: FaShoppingCart },
     { name: 'Ranking', href: '/leaderboard', icon: FaTrophy },
-    { name: 'Inicio', href: '/', icon: FaHome }, // Central
-    { name: 'Logros', href: '/achievements', icon: FaMedal },
+    { name: 'Inicio', href: '/', icon: FaHome },
+    // Usamos la nueva mochila aquí 👇
+    { name: 'Mochila', href: '/inventory', icon: BsBackpackFill },
     { name: 'Escanear', href: '/scan', icon: FaQrcode },
   ]
 
@@ -36,7 +38,6 @@ export default function BottomNav() {
                 ${isActive ? 'text-yellow-400' : 'text-slate-400 hover:text-slate-200'}
               `}
             >
-              {/* El botón de inicio (centro) lo hacemos un poco más grande o especial si quieres */}
               <div className={`
                 text-2xl mb-1 transition-transform
                 ${isActive && isHome ? 'scale-110' : ''}
@@ -48,7 +49,6 @@ export default function BottomNav() {
                 {item.name}
               </span>
 
-              {/* Indicador brillante si está activo */}
               {isActive && (
                 <span className="absolute top-0 w-8 h-0.5 bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.5)] rounded-b-full" />
               )}

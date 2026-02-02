@@ -3,7 +3,9 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FaBolt, FaPen, FaCheck, FaTimes, FaUserCircle, FaCamera, FaTrophy } from 'react-icons/fa'
+// 👇 IMPORTAMOS LINK Y EL ICONO DE MEDALLA
+import Link from 'next/link'
+import { FaBolt, FaPen, FaCheck, FaTimes, FaUserCircle, FaCamera, FaTrophy, FaMedal } from 'react-icons/fa'
 import { useRouter } from 'next/navigation'
 
 interface BalanceCardProps {
@@ -13,7 +15,7 @@ interface BalanceCardProps {
   initialAvatarUrl: string | null
   balance: number
   lifetimeScore: number
-  groupName: string | null // 👈 NUEVO CAMPO AÑADIDO
+  groupName: string | null
 }
 
 export default function BalanceCard({ 
@@ -23,7 +25,7 @@ export default function BalanceCard({
   initialAvatarUrl,
   balance,
   lifetimeScore,
-  groupName // 👈 RECIBIMOS EL DATO
+  groupName
 }: BalanceCardProps) {
   const supabase = createClient()
   const router = useRouter()
@@ -31,19 +33,15 @@ export default function BalanceCard({
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   
-  // Estados para los datos
   const [nickname, setNickname] = useState(initialNickname || initialFullName || 'Estudiante')
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl || '')
   
-  // Estados temporales para la edición
   const [tempNickname, setTempNickname] = useState(nickname)
   const [tempAvatarUrl, setTempAvatarUrl] = useState(avatarUrl)
 
   const handleSave = async () => {
     setLoading(true)
 
-    // 🔒 CAMBIO DE SEGURIDAD:
-    // En lugar de .update() directo a la tabla, llamamos a la función segura (RPC)
     const { error } = await supabase.rpc('update_own_profile_info', {
       new_nickname: tempNickname,
       new_avatar_url: tempAvatarUrl
@@ -54,7 +52,6 @@ export default function BalanceCard({
       setAvatarUrl(tempAvatarUrl)
       setIsEditing(false)
 
-      // Enviamos la señal al Header para que se actualice al instante
       const event = new CustomEvent('profile_updated', { 
         detail: { avatar_url: tempAvatarUrl } 
       });
@@ -81,6 +78,19 @@ export default function BalanceCard({
       <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 rounded-full bg-white opacity-5 blur-2xl"></div>
       <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 rounded-full bg-white opacity-5 blur-2xl"></div>
 
+      {/* 👇 NUEVO BOTÓN: LOGROS (Top Right) 
+         Se muestra solo si NO estamos editando para no estorbar
+      */}
+      {!isEditing && (
+        <Link 
+          href="/achievements"
+          className="absolute top-6 right-6 z-20 bg-black/20 hover:bg-black/40 p-2 rounded-full text-yellow-300 transition-all backdrop-blur-sm border border-white/10 shadow-lg group"
+          aria-label="Ver mis Logros"
+        >
+          <FaMedal size={20} className="group-hover:scale-110 transition-transform" />
+        </Link>
+      )}
+
       <div className="relative z-10 flex flex-col gap-6">
         
         {/* CABECERA DE LA TARJETA: FOTO Y NOMBRE */}
@@ -105,7 +115,8 @@ export default function BalanceCard({
           </div>
 
           {/* NOMBRE Y EDICIÓN */}
-          <div className="flex-1 min-w-0 pt-1">
+          {/* Añadimos padding-right (pr-12) para que el nombre largo no se choque con la medalla */}
+          <div className={`flex-1 min-w-0 pt-1 ${!isEditing ? 'pr-12' : ''}`}>
             {isEditing ? (
               <div className="flex flex-col gap-3 animate-in fade-in duration-200">
                 {/* Input Nickname */}
@@ -168,7 +179,6 @@ export default function BalanceCard({
                 </div>
                 <p className="text-indigo-200 text-xs mt-0.5 truncate">{initialFullName}</p>
                 
-                {/* 👇 AÑADIDO: VISUALIZACIÓN DEL GRUPO */}
                 {groupName && (
                   <p className="text-indigo-300/70 text-[10px] uppercase font-bold tracking-wide mt-1 truncate border-l-2 border-indigo-400/30 pl-2">
                     {groupName}
