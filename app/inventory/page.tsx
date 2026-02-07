@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { FaArrowLeft, FaBoxOpen, FaScroll } from 'react-icons/fa'
+import { FaArrowLeft, FaBoxOpen, FaMicrochip } from 'react-icons/fa' // Cambiado Icono a Microchip para "Banco de Memoria"
 import InventoryItems from '@/components/inventory/InventoryItems'
 import InventoryFiles from '@/components/inventory/InventoryFiles'
 
@@ -38,13 +38,19 @@ export default function InventoryPage() {
                 className={`py-2 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2
                 ${activeTab === 'files' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
             >
-                <FaScroll /> Archivos
+                {/* Nombre eléctrico sugerido: BANCO DE MEMORIA */}
+                <FaMicrochip /> Banco de Memoria
             </button>
         </div>
 
         {/* --- CONTENIDO CONDICIONAL --- */}
         <div className="min-h-[300px]">
-            {activeTab === 'items' ? <InventoryItems /> : <InventoryFiles />}
+            {activeTab === 'items' ? (
+                // Pasamos la función para cambiar de tab como prop
+                <InventoryItems onSwitchToFiles={() => setActiveTab('files')} />
+            ) : (
+                <InventoryFiles />
+            )}
         </div>
 
       </div>

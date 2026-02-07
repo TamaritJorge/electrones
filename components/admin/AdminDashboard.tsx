@@ -3,9 +3,14 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
+// Importamos los iconos de FontAwesome
 import { FaSearch, FaUserGraduate, FaTimes, FaBolt, FaChalkboardTeacher, FaBug, FaHistory, FaExternalLinkAlt, FaQrcode, FaArrowRight } from 'react-icons/fa'
+// IMPORTANTE: Importamos la mochila de Bootstrap Icons
+import { BsBackpackFill } from 'react-icons/bs' 
+
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import PermanentUnlocksTable from '@/components/admin/PermanentUnlocksTable'
 
 export default function AdminDashboard({ initialStudents }: { initialStudents: any[] }) {
   const supabase = createClient()
@@ -14,6 +19,9 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null)
   const [loading, setLoading] = useState(false)
+  
+  // Estado para el modal de mejoras permanentes
+  const [showUnlocksModal, setShowUnlocksModal] = useState(false)
   
   // Formulario
   const [amount, setAmount] = useState('')
@@ -57,8 +65,10 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
 
   return (
     <div>
-      {/* 🚀 NUEVA SECCIÓN: ACCIONES RÁPIDAS (QR) */}
+      {/* 🚀 SECCIÓN: ACCIONES RÁPIDAS */}
       <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        {/* BOTÓN 1: QR */}
         <Link 
           href="/admin/qr"
           className="group relative overflow-hidden p-6 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl border border-white/10 shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300"
@@ -81,6 +91,33 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
             </div>
           </div>
         </Link>
+
+        {/* BOTÓN 2: MEJORAS PERMANENTES (MOCHILA) */}
+        <button 
+          onClick={() => setShowUnlocksModal(true)}
+          className="group relative overflow-hidden p-6 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-slate-700 shadow-xl hover:shadow-2xl hover:border-yellow-500/50 hover:scale-[1.01] transition-all duration-300 text-left"
+        >
+          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-yellow-500 opacity-5 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
+          
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Contenedor del Icono */}
+              <div className="w-12 h-12 bg-slate-700/50 rounded-xl flex items-center justify-center backdrop-blur-sm shadow-inner border border-slate-600 group-hover:border-yellow-500/30 transition-colors">
+                {/* Usamos la Mochila rellena */}
+                <BsBackpackFill className="text-yellow-500 text-2xl group-hover:scale-110 transition-transform" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-100 leading-none group-hover:text-yellow-400 transition-colors">Mochilas</h3>
+                <p className="text-slate-400 text-sm mt-1 opacity-90">Ver objetos desbloqueados</p>
+              </div>
+            </div>
+            
+            <div className="w-10 h-10 rounded-full bg-slate-700/50 flex items-center justify-center group-hover:bg-yellow-500/20 transition-colors">
+              <FaArrowRight className="text-slate-400 group-hover:text-yellow-400 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        </button>
+
       </div>
 
       {/* 🔍 BUSCADOR */}
@@ -97,7 +134,7 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
         />
       </div>
 
-      {/* 📋 LISTA DE ALUMNOS (Sin cambios) */}
+      {/* 📋 LISTA DE ALUMNOS */}
       <div className="grid gap-3">
         {filteredStudents.length === 0 && (
           <p className="text-center text-slate-500 py-8">No se encontraron alumnos</p>
@@ -136,9 +173,9 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
         ))}
       </div>
 
-      {/* 🛠 MODAL DE GESTIÓN (Sin cambios significativos, solo mantenido por contexto) */}
+      {/* 🛠 MODAL DE GESTIÓN (TRANSACCIONES) */}
       {selectedStudent && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
           <div className="bg-slate-800 w-full max-w-md sm:rounded-2xl rounded-t-3xl p-6 border-t sm:border border-slate-700 animate-in slide-in-from-bottom-10 shadow-2xl overflow-y-auto max-h-[90vh]">
             
             <div className="flex justify-between items-start mb-4">
@@ -227,6 +264,30 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
             </button>
 
           </div>
+        </div>
+      )}
+
+      {/* 🛡️ NUEVO MODAL: LISTA DE MEJORAS PERMANENTES */}
+      {showUnlocksModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-slate-900 w-full max-w-4xl max-h-[85vh] rounded-2xl border border-slate-700 shadow-2xl flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200">
+                
+                {/* Botón Cerrar */}
+                <button 
+                    onClick={() => setShowUnlocksModal(false)}
+                    className="absolute top-4 right-4 z-10 p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500/50 border border-transparent transition-all"
+                >
+                    <FaTimes />
+                </button>
+
+                {/* Contenido: La Tabla */}
+                <div className="flex-1 overflow-hidden p-1 flex flex-col">
+                   <PermanentUnlocksTable />
+                </div>
+            </div>
+            
+            {/* Click fuera para cerrar */}
+            <div className="absolute inset-0 -z-10" onClick={() => setShowUnlocksModal(false)}></div>
         </div>
       )}
 

@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
-import { FaInfoCircle, FaTimes, FaMagic } from 'react-icons/fa'
+import { FaInfoCircle, FaTimes, FaMagic, FaMicrochip, FaLock, FaBolt } from 'react-icons/fa' // Nuevos iconos
 import ProductArtifact from '@/components/ProductArtifact'
 
 interface StackedItem {
@@ -12,10 +12,16 @@ interface StackedItem {
   name: string
   description: string
   image_icon: string
+  category: string 
   quantity: number
 }
 
-export default function InventoryItems() {
+// Definimos las Props que recibe este componente
+interface InventoryItemsProps {
+    onSwitchToFiles: () => void; // La función que nos pasa el padre
+}
+
+export default function InventoryItems({ onSwitchToFiles }: InventoryItemsProps) {
   const [inventory, setInventory] = useState<StackedItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedItem, setSelectedItem] = useState<StackedItem | null>(null)
@@ -38,7 +44,8 @@ export default function InventoryItems() {
           shop_products (
               name,
               description,
-              image_icon
+              image_icon,
+              category
           )
       `)
       .eq('user_id', user.id)
@@ -59,6 +66,7 @@ export default function InventoryItems() {
              name: item.shop_products.name,
              description: item.shop_products.description,
              image_icon: item.shop_products.image_icon,
+             category: item.shop_products.category,
              quantity: 0
            }
          }
@@ -72,11 +80,9 @@ export default function InventoryItems() {
   const handleUseItem = async () => {
     if (!selectedItem) return
     setIsUsing(true)
-
-    // TODO: Llamada RPC real
-    // const { error } = await supabase.rpc('consume_item', { item_id: selectedItem.product_id })
     
-    await new Promise(resolve => setTimeout(resolve, 800)) // Fake delay
+    // Simulación de uso
+    await new Promise(resolve => setTimeout(resolve, 800)) 
     alert(`Has usado: ${selectedItem.name}`)
 
     setInventory(prev => {
@@ -90,6 +96,12 @@ export default function InventoryItems() {
 
     setIsUsing(false)
     setSelectedItem(null)
+  }
+
+  // Helper para saber si el item es "usable" directamente (Pociones, items normales)
+  // Devuelve true SOLO si NO es permanente ni lootbox
+  const isDirectlyUsable = (category: string) => {
+    return category !== 'permanente' && category !== 'lootbox'
   }
 
   if (loading) {
@@ -113,14 +125,9 @@ export default function InventoryItems() {
             {inventory.map((item) => (
                 <div key={item.product_id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col items-center relative group overflow-hidden shadow-lg transition-colors hover:border-slate-700">
                     
-                    {/* CAMBIO PRINCIPAL AQUÍ:
-                       El envoltorio del icono ahora es 'relative inline-block' 
-                       y el contador está DENTRO.
-                    */}
                     <div className="mb-3 transform group-hover:scale-105 transition-transform duration-300 relative inline-block">
                         <ProductArtifact iconName={item.image_icon} />
 
-                        {/* Contador estilo badge redondo en la esquina del icono */}
                         <div className="absolute -bottom-2 -right-2 bg-slate-950 text-indigo-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-slate-800 shadow-md z-10 font-mono leading-none flex items-center justify-center min-w-[18px] h-[18px]">
                             x{item.quantity}
                         </div>
@@ -143,7 +150,7 @@ export default function InventoryItems() {
             ))}
         </div>
 
-        {/* --- MODAL (Sin cambios) --- */}
+        {/* --- MODAL --- */}
         {selectedItem && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-200">
             <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
@@ -162,7 +169,10 @@ export default function InventoryItems() {
                   </div>
                </div>
                
-               <h2 className="text-xl font-bold text-white mb-2">{selectedItem.name}</h2>
+               <h2 className="text-xl font-bold text-white mb-1">{selectedItem.name}</h2>
+               <span className="text-[10px] text-slate-500 uppercase tracking-widest mb-4 border border-slate-800 px-2 py-0.5 rounded-full">
+                  {selectedItem.category}
+               </span>
                
                <div className="bg-slate-950/50 rounded-xl p-4 w-full mb-6 border border-slate-800/50 max-h-32 overflow-y-auto">
                  <p className="text-slate-400 text-sm leading-relaxed text-left">
@@ -176,13 +186,40 @@ export default function InventoryItems() {
                      <span className="text-2xl font-mono text-white">x{selectedItem.quantity}</span>
                   </div>
 
-                  <button 
-                    onClick={handleUseItem}
-                    disabled={isUsing}
-                    className="flex-1 py-3 px-6 rounded-xl font-bold text-sm bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-900/40 hover:shadow-indigo-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isUsing ? "Usando..." : <><FaMagic /> USAR</>}
-                  </button>
+                  {/* LÓGICA DE BOTONES SEGÚN CATEGORÍA */}
+                  
+                  {/* CASO 1: OBJETO NORMAL (USABLE) */}
+                  {isDirectlyUsable(selectedItem.category) && (
+                      <button 
+                        onClick={handleUseItem}
+                        disabled={isUsing}
+                        className="flex-1 py-3 px-6 rounded-xl font-bold text-sm bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-900/40 hover:shadow-indigo-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isUsing ? "Usando..." : <><FaMagic /> USAR</>}
+                      </button>
+                  )}
+
+                  {/* CASO 2: LOOTBOX (Cajas de Alta Tensión) */}
+                  {selectedItem.category === 'lootbox' && (
+                      <button 
+                        onClick={() => {
+                            setSelectedItem(null); // Cerramos modal
+                            onSwitchToFiles();     // Vamos al Banco de Memoria
+                        }}
+                        className="flex-1 py-3 px-2 rounded-xl font-bold text-xs bg-yellow-500/10 text-yellow-500 border border-yellow-500/50 hover:bg-yellow-500 hover:text-slate-900 hover:border-yellow-400 flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(234,179,8,0.2)]"
+                      >
+                        {/* He cambiado el estilo a Amarillo (Yellow) para indicar Peligro/Electricidad */}
+                        <FaBolt size={14} /> DESCARGAR
+                      </button>
+                  )}
+
+                  {/* CASO 3: PERMANENTE (SOLO INFO) */}
+                  {selectedItem.category === 'permanente' && (
+                      <div className="flex-1 py-3 px-6 rounded-xl font-bold text-xs bg-slate-800 text-slate-500 border border-slate-700 flex items-center justify-center gap-2 cursor-default">
+                          <FaLock size={10} /> PASIVO
+                      </div>
+                  )}
+
                </div>
 
             </div>

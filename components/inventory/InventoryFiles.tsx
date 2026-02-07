@@ -19,7 +19,7 @@ export default function InventoryFiles() {
                 </div>
                 <h3 className="text-slate-300 font-bold mb-2 text-lg">Archivos Encriptados</h3>
                 <p className="text-sm text-slate-500 leading-relaxed max-w-[250px]">
-                    No tienes archivos desencriptados. Utiliza las <span className="text-yellow-500 font-bold">Cajas de Alto Voltaje</span> para desbloquear contenido oculto.
+                    No has extraido ningún archivo. Descarga las <span className="text-yellow-500 font-bold">Cajas de Alto Voltaje</span> para extraer su contenido oculto.
                 </p>
             </div>
         )}
