@@ -55,7 +55,7 @@ export default function PrivacyPolicy() {
         <section>
           <h2 className="text-xl font-semibold text-white mb-2">6. Contacto</h2>
           <p>
-            Si tienes preguntas sobre esta política o el uso de tus datos para investigación, ponte en contacto con los profesores de la asignatura.
+            Si tienes preguntas sobre esta política o el uso de tus datos, ponte en contacto con los profesores de la asignatura.
           </p>
         </section>
       </div>
