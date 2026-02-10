@@ -193,7 +193,7 @@ export default function IndividualLeaderboard() {
         {/* Mensaje final */}
         <div className="text-center pt-8 border-t border-slate-800/50 border-dashed">
            <p className="text-xs text-slate-600 italic">
-             Academia Activa: <span className="text-slate-400 font-bold">{entries.length} Agentes</span>
+             <span className="text-slate-400 font-bold">{entries.length} participantes</span>
            </p>
         </div>
 
