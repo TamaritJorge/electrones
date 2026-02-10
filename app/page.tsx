@@ -4,24 +4,45 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import BalanceCard from '@/components/dashboard/BalanceCard'
 import TransactionList from '@/components/dashboard/TransactionList'
-import GroupSelectorModal from '@/components/dashboard/GroupSelectorModal' // <--- IMPORTAR
+import GroupSelectorModal from '@/components/dashboard/GroupSelectorModal'
 import { FaHistory, FaArrowRight } from 'react-icons/fa'
+// YA NO IMPORTAMOS formatTeam AQUÍ
+// import { formatTeam } from '@/utils/teams' 
 
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
-  // Obtenemos perfil con el campo student_group
+  if (!user) {
+    return redirect('/login')
+  }
+
+  // 1. Perfil
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
 
-  // ... (código de transacciones igual que antes) ...
+  // 2. Equipo (Datos crudos)
+  let teamRawData = null
+  const teamId = profile?.team_id || profile?.team
+
+  if (teamId) {
+    const { data } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('id', teamId)
+      .single()
+      
+    if (data) {
+      teamRawData = data // <--- Pasamos el objeto JSON puro
+    }
+  }
+
+  // 3. Transacciones
   const { data: transactions } = await supabase
       .from('transactions')
       .select('*')
@@ -31,14 +52,14 @@ export default async function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-slate-900 px-4 py-6 pb-24">
-      {/* 👇 COMPONENTE DE SELECCIÓN DE GRUPO */}
       <GroupSelectorModal 
         userId={user.id} 
         currentGroup={profile?.student_group} 
       />
 
       <div className="max-w-md mx-auto space-y-6">
-        {/* ... (Resto de tu dashboard igual que antes) ... */}
+        
+        {/* Pasamos rawTeamData en lugar de team formateado */}
         <BalanceCard 
           userId={user.id} 
           initialNickname={profile?.nickname} 
@@ -47,9 +68,9 @@ export default async function DashboardPage() {
           balance={profile?.current_balance ?? 0}
           lifetimeScore={profile?.lifetime_score ?? 0}
           groupName={profile?.student_group}
+          rawTeamData={teamRawData} // <--- CAMBIO AQUÍ
         />
         
-        {/* ... Lista de transacciones ... */}
         <div>
           <h3 className="text-slate-400 text-sm font-bold uppercase tracking-wider mb-3 px-1">
             Últimos movimientos

@@ -1,4 +1,6 @@
+// Ruta: components/leaderboard/PlayerCard.tsx
 import { FaUserCircle, FaTrophy, FaBolt } from 'react-icons/fa'
+import { formatTeam } from '@/utils/teams' 
 
 interface PlayerCardProps {
   rank: number
@@ -6,7 +8,8 @@ interface PlayerCardProps {
   avatarUrl: string | null
   score: number
   isCurrentUser?: boolean
-  leagueColor?: string 
+  leagueColor?: string
+  team?: { id: string } | null // <--- IMPORTANTE: Recibimos el equipo
 }
 
 export default function PlayerCard({ 
@@ -15,16 +18,20 @@ export default function PlayerCard({
   avatarUrl, 
   score, 
   isCurrentUser = false,
-  leagueColor = 'text-slate-200' 
+  leagueColor = 'text-slate-200',
+  team 
 }: PlayerCardProps) {
   
-  // Determinamos si es Top 1, 2 o 3 para estilos especiales
+  // 1. OBTENER ESTILOS DEL EQUIPO (Colores e Iconos)
+  const teamVisuals = team ? formatTeam(team) : null
+
+  // Lógica de podio
   const isTop1 = rank === 1
   const isTop2 = rank === 2
   const isTop3 = rank === 3
   const isPodium = rank <= 3
 
-  // Configuración de estilos según el puesto
+  // Estilos de podio
   let podiumBorder = ''
   let podiumText = ''
   let podiumIconColor = ''
@@ -43,7 +50,7 @@ export default function PlayerCard({
     podiumIconColor = 'text-amber-600'
   }
 
-  // Estilo base para usuarios normales
+  // Estilo base
   const normalStyle = isCurrentUser 
     ? 'bg-indigo-600/20 border-indigo-500 shadow-indigo-500/20 shadow-lg translate-x-2' 
     : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800 hover:border-slate-600'
@@ -58,9 +65,9 @@ export default function PlayerCard({
     >
       <div className="flex items-center gap-4">
         
-        {/* RANGO / POSICIÓN */}
+        {/* RANGO */}
         <div className={`
-          font-black text-lg w-10 text-center font-mono flex justify-center
+          font-black text-lg w-8 text-center font-mono flex justify-center shrink-0
           ${isPodium ? 'text-2xl' : 'text-lg'}
           ${isCurrentUser ? 'scale-110' : 'opacity-80'}
         `}>
@@ -71,53 +78,80 @@ export default function PlayerCard({
           )}
         </div>
 
-        {/* AVATAR */}
-        <div className="relative">
+        {/* AVATAR + BORDE DE EQUIPO */}
+        <div className="relative shrink-0">
           {avatarUrl ? (
             <img 
               src={avatarUrl} 
               alt={nickname} 
               className={`
-                rounded-full object-cover border-2 shadow-sm
+                rounded-full object-cover transition-all duration-300
                 ${isPodium ? 'w-12 h-12' : 'w-10 h-10'}
-                ${isCurrentUser ? 'border-indigo-400' : isPodium ? podiumText.replace('text', 'border') : 'border-slate-600'}
               `}
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              style={{
+                borderWidth: '2px',
+                // 👇 USA EL COLOR DEL EQUIPO SI EXISTE
+                borderColor: teamVisuals ? teamVisuals.styles.text.color : (isCurrentUser ? '#818cf8' : '#475569'),
+                boxShadow: teamVisuals ? `0 0 10px -3px ${teamVisuals.styles.text.color}` : 'none'
+              }}
             />
           ) : (
-            <div className={`
-              rounded-full flex items-center justify-center border-2
-              ${isPodium ? 'w-12 h-12' : 'w-10 h-10'}
-              ${isCurrentUser ? 'bg-indigo-900 border-indigo-400' : 'bg-slate-700 border-slate-600'}
-            `}>
-              <FaUserCircle className="text-white/50 text-xl" />
+            <div 
+              className={`
+                rounded-full flex items-center justify-center transition-all duration-300
+                ${isPodium ? 'w-12 h-12' : 'w-10 h-10'}
+                ${isCurrentUser && !teamVisuals ? 'bg-indigo-900' : 'bg-slate-800'}
+              `}
+              style={{
+                borderWidth: '2px',
+                borderColor: teamVisuals ? teamVisuals.styles.text.color : (isCurrentUser ? '#818cf8' : '#475569'),
+                color: teamVisuals ? teamVisuals.styles.text.color : '#94a3b8',
+                boxShadow: teamVisuals ? `0 0 10px -3px ${teamVisuals.styles.text.color}` : 'none'
+              }}
+            >
+              <FaUserCircle size={isPodium ? 24 : 20} />
             </div>
           )}
-          
-          {/* Nota: He quitado la "coronita pequeña" que había antes porque ahora ya tienen una copa grande a la izquierda */}
         </div>
 
-        {/* NOMBRE */}
-        <div className="flex flex-col">
-          <span className={`
-            font-bold truncate max-w-[120px] sm:max-w-[200px]
-            ${isPodium ? 'text-base text-white' : 'text-sm'}
-            ${isCurrentUser ? 'text-white' : 'text-slate-200'}
-          `}>
-            {nickname}
-            {isCurrentUser && <span className="text-[10px] ml-2 text-indigo-300 font-normal">(Tú)</span>}
-          </span>
+        {/* NOMBRE + ICONO EQUIPO */}
+        <div className="flex flex-col min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className={`
+              font-bold truncate max-w-[100px] sm:max-w-[180px]
+              ${isPodium ? 'text-base text-white' : 'text-sm'}
+              ${isCurrentUser ? 'text-white' : 'text-slate-200'}
+            `}>
+              {nickname}
+            </span>
+            
+            {/* 👇 ICONO DEL EQUIPO */}
+            {teamVisuals && (
+              <div 
+                className="shrink-0 opacity-90" 
+                title={teamVisuals.name}
+                style={{ color: teamVisuals.styles.text.color }}
+              >
+                <teamVisuals.Icon size={12} />
+              </div>
+            )}
+          </div>
+
+          {isCurrentUser && (
+            <span className="text-[10px] text-indigo-300 font-normal leading-none -mt-0.5">
+              (Tú)
+            </span>
+          )}
         </div>
       </div>
 
-      {/* PUNTUACIÓN */}
+      {/* SCORE */}
       <div className={`
-        font-mono font-bold flex items-center gap-2
+        font-mono font-bold flex items-center gap-2 shrink-0 ml-2
         ${isPodium ? 'text-white text-lg' : 'text-sm'}
         ${isCurrentUser ? 'text-indigo-200' : 'text-slate-400'}
       `}>
         {score.toLocaleString()} 
-        {/* Icono del rayo con el color de la liga */}
         <FaBolt className={`text-xs ${leagueColor}`} />
       </div>
     </div>

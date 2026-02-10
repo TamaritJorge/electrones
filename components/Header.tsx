@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { FaSignOutAlt, FaUserCircle, FaUserShield } from 'react-icons/fa'
 import { useState, useEffect } from 'react'
+import { formatTeam, TeamUI } from '@/utils/teams' // <--- Importamos utilidades de equipo
 
 export default function Header() {
   const router = useRouter()
@@ -14,6 +15,8 @@ export default function Header() {
   // 1. TODOS LOS HOOKS SIEMPRE PRIMERO
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [nickname, setNickname] = useState<string>('Estudiante') // <--- Estado para nickname
+  const [team, setTeam] = useState<TeamUI | null>(null) // <--- Estado para el equipo visual
   const [isAdmin, setIsAdmin] = useState(false)
 
   // Efecto para cargar datos
@@ -23,25 +26,42 @@ export default function Header() {
     const fetchProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data } = await supabase
+        // 1. Obtenemos perfil con campos de equipo y nickname
+        const { data: profile } = await supabase
           .from('profiles')
-          .select('avatar_url, role')
+          .select('avatar_url, role, nickname, team, team_id') // <--- Pedimos nickname y team
           .eq('id', user.id)
           .single()
         
-        if (data) {
-          if (data.avatar_url) setAvatarUrl(data.avatar_url)
-          if (data.role === 'admin') setIsAdmin(true)
+        if (profile) {
+          if (profile.avatar_url) setAvatarUrl(profile.avatar_url)
+          if (profile.nickname) setNickname(profile.nickname)
+          if (profile.role === 'admin') setIsAdmin(true)
+
+          // 2. Lógica para obtener el equipo visual
+          const teamId = profile.team_id || profile.team
+          if (teamId) {
+             const { data: teamRaw } = await supabase
+                .from('teams')
+                .select('*')
+                .eq('id', teamId)
+                .single()
+             
+             if (teamRaw) {
+                // Como estamos en Client Component, podemos formatear aquí directamente
+                setTeam(formatTeam(teamRaw)) 
+             }
+          }
         }
       }
     }
 
     fetchProfile()
 
+    // Escuchar cambios en el perfil (desde BalanceCard)
     const handleProfileUpdate = (event: any) => {
-      if (event.detail?.avatar_url) {
-        setAvatarUrl(event.detail.avatar_url)
-      }
+      if (event.detail?.avatar_url) setAvatarUrl(event.detail.avatar_url)
+      // Si decidieras emitir el nickname en el evento, podrías actualizarlo aquí también
     }
 
     window.addEventListener('profile_updated', handleProfileUpdate)
@@ -59,34 +79,59 @@ export default function Header() {
     router.refresh()
   }
 
-  // 2. AHORA SÍ: CONDICIONALES DE RENDERIZADO AL FINAL
-  // Si estamos en login, no pintamos nada, pero los hooks de arriba YA se han ejecutado.
+  // 2. CONDICIONALES DE RENDERIZADO
   if (pathname === '/login') return null
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-slate-900/95 backdrop-blur-md border-b border-white/5 z-50 flex items-center justify-center px-4 shadow-sm">
       <div className="w-full max-w-md flex justify-between items-center">
         
-        {/* PARTE IZQUIERDA: Avatar + Nombre App */}
+        {/* PARTE IZQUIERDA: Avatar + Info Usuario */}
         <div className="flex items-center gap-3">
-          <Link href="/" className="relative cursor-pointer">
+          <Link href="/" className="relative cursor-pointer group">
             {avatarUrl ? (
               <img 
                 src={avatarUrl} 
                 alt="Perfil" 
-                className="w-9 h-9 rounded-full border-2 border-yellow-400/50 object-cover"
+                className="w-10 h-10 rounded-full object-cover transition-all duration-300"
+                style={{ 
+                    // Borde dinámico según el equipo
+                    borderWidth: '2px',
+                    borderColor: team ? team.styles.text.color : '#334155', // Slate-700 si no hay equipo
+                    boxShadow: team ? `0 0 10px -2px ${team.styles.text.color}` : 'none'
+                }}
               />
             ) : (
-              <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center border-2 border-slate-700 text-slate-400">
+              <div 
+                className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border-2 transition-all duration-300"
+                style={{ 
+                    borderColor: team ? team.styles.text.color : '#334155',
+                    color: team ? team.styles.text.color : '#94a3b8'
+                }}
+              >
                 <FaUserCircle size={24} />
               </div>
             )}
+            
+            {/* Punto de estado online */}
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-slate-900 rounded-full"></span>
           </Link>
 
-          <Link href="/" className="font-bold text-lg text-white tracking-tight hover:opacity-80 transition-opacity">
-            Electrones
-          </Link>
+          <div className="flex flex-col justify-center">
+            <Link href="/" className="font-bold text-sm text-white tracking-tight hover:opacity-80 transition-opacity leading-tight">
+              {nickname}
+            </Link>
+            
+            {/* Nombre del equipo + Icono */}
+            {team ? (
+                <div className="flex items-center gap-1 opacity-80" style={{ color: team.styles.text.color }}>
+                    <team.Icon size={10} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{team.name}</span>
+                </div>
+            ) : (
+                <span className="text-[10px] text-slate-500 font-medium">Sin equipo</span>
+            )}
+          </div>
         </div>
 
         {/* PARTE DERECHA: Botones de Acción */}

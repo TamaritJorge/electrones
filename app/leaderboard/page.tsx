@@ -1,3 +1,4 @@
+//Ruta: app/leaderboard/page.tsx
 'use client'
 
 import { useState } from 'react'

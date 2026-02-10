@@ -1,16 +1,30 @@
-import { FaBolt, FaWaveSquare, FaFire, FaProjectDiagram, FaAtom, FaLightbulb, FaQuestionCircle } from 'react-icons/fa'
+// Ruta: utils/teams.ts
+import { 
+  FaBolt, 
+  FaWaveSquare, 
+  FaFire, 
+  FaProjectDiagram, 
+  FaAtom, 
+  FaLightbulb, 
+  FaQuestionCircle,
+  FaAppleAlt,   // Newton
+  FaRadiation,  // Curie
+  FaMagnet      // Faraday
+} from 'react-icons/fa'
 import { IconType } from 'react-icons'
 
 // 1. DICCIONARIO DE ICONOS
 // Mapea el texto de la columna 'icon_key' de Supabase al componente de React.
-// Si añades un equipo nuevo en la DB, intenta usar una de estas claves (o añade una nueva aquí).
 const ICON_MAP: Record<string, IconType> = {
-  'bolt': FaBolt,            // Para Tesla
-  'wave': FaWaveSquare,      // Para Maxwell
-  'fire': FaFire,            // Para Ayrton
-  'chart': FaProjectDiagram, // Para Clarke
-  'atom': FaAtom,            // Extra por si acaso
-  'bulb': FaLightbulb,       // Extra por si acaso
+  'bolt': FaBolt,            // Tesla
+  'wave': FaWaveSquare,      // Maxwell
+  'fire': FaFire,            // Ayrton
+  'chart': FaProjectDiagram, // Clarke
+  'atom': FaAtom,            // Bohr
+  'bulb': FaLightbulb,       // Edison
+  'apple': FaAppleAlt,       // Newton
+  'radiation': FaRadiation,  // Curie
+  'magnet': FaMagnet,        // Faraday
   'default': FaQuestionCircle
 }
 
@@ -20,55 +34,56 @@ export interface TeamUI {
   name: string
   description: string
   Icon: IconType
-  // Aquí guardamos los estilos ya calculados para usarlos directos en el style={}
   styles: {
     text: { color: string }
     bg: { backgroundColor: string }
     border: { borderColor: string }
-    gradient: { background: string } // Generado automáticamente
-    glow: { boxShadow: string }      // Efecto neón automático
+    gradient: { background: string } 
+    glow: { boxShadow: string }      
   }
 }
 
-// 3. FUNCIÓN DE MAPEO AUTOMÁTICO
-// Esta función recibe el objeto crudo de Supabase y te devuelve el objeto UI listo.
+// 3. FUNCIÓN DE MAPEO
+// Transforma los datos crudos de Supabase en estilos visuales.
 export const formatTeam = (dbTeam: any): TeamUI => {
-  if (!dbTeam) return {
-    id: 'unknown',
-    name: 'Sin Equipo',
-    description: '',
-    Icon: ICON_MAP['default'],
-    styles: {
-      text: { color: '#64748b' },
-      bg: { backgroundColor: '#64748b' },
-      border: { borderColor: '#64748b' },
-      gradient: { background: '#64748b' },
-      glow: { boxShadow: 'none' }
-    }
+  // Valores por defecto (Gris Slate)
+  const defaultHex = '#64748b'
+  
+  // A. Si no hay objeto equipo, devolvemos el default completo
+  if (!dbTeam) {
+    return createTeamStyle('unknown', 'Sin Equipo', '', 'default', defaultHex)
   }
 
-  const hex = dbTeam.hex_color || '#64748b'
+  // B. Extraemos datos (con seguridad por si algún campo viene vacío de la DB)
+  // IMPORTANTE: Aquí confiamos 100% en que 'dbTeam' trae el campo 'hex_color' desde Supabase.
+  const hex = dbTeam.hex_color || defaultHex
   const iconKey = dbTeam.icon_key || 'default'
+  const name = dbTeam.name || 'Equipo'
+  const id = dbTeam.id || 'unknown'
+  const desc = dbTeam.description || ''
 
+  return createTeamStyle(id, name, desc, iconKey, hex)
+}
+
+// Función auxiliar para no repetir código y mantener limpio el return
+const createTeamStyle = (id: string, name: string, desc: string, iconKey: string, hex: string): TeamUI => {
   return {
-    id: dbTeam.id,
-    name: dbTeam.name,
-    description: dbTeam.description,
+    id,
+    name,
+    description: desc,
     Icon: ICON_MAP[iconKey] || ICON_MAP['default'],
     
-    // AQUÍ OCURRE LA MAGIA AUTOMÁTICA
-    // Usamos el color hexadecimal de la DB para generar todas las variantes visuales
     styles: {
       text: { color: hex },
-      bg: { backgroundColor: hex },
+      bg: { backgroundColor: hex }, // Nota: El componente PlayerCard suele aplicar opacidad a esto
       border: { borderColor: hex },
-      // Creamos un gradiente diagonal suave usando el mismo color con transparencia
+      // Gradiente diagonal suave
       gradient: { 
         background: `linear-gradient(135deg, ${hex} 20%, ${hex}aa 100%)` 
       },
-      // Creamos un brillo difuso del color del equipo
+      // Brillo/Glow basado en el color
       glow: { 
-        boxShadow: `0 0 20px ${hex}40` 
+        boxShadow: `0 0 20px ${hex}40` // hex + 40 (transparencia)
       }
     }
   }
