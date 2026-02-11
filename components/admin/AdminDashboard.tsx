@@ -3,14 +3,13 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-// Importamos los iconos de FontAwesome
 import { FaSearch, FaUserGraduate, FaTimes, FaBolt, FaChalkboardTeacher, FaBug, FaHistory, FaExternalLinkAlt, FaQrcode, FaArrowRight } from 'react-icons/fa'
-// IMPORTANTE: Importamos la mochila de Bootstrap Icons
 import { BsBackpackFill } from 'react-icons/bs' 
-
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import PermanentUnlocksTable from '@/components/admin/PermanentUnlocksTable'
+import { formatTeam } from '@/utils/teams'
+import Toast from '@/components/ui/Toast' 
 
 export default function AdminDashboard({ initialStudents }: { initialStudents: any[] }) {
   const supabase = createClient()
@@ -19,19 +18,23 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null)
   const [loading, setLoading] = useState(false)
-  
-  // Estado para el modal de mejoras permanentes
   const [showUnlocksModal, setShowUnlocksModal] = useState(false)
   
   // Formulario
   const [amount, setAmount] = useState('')
   const [concept, setConcept] = useState('')
 
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null)
+
   const filteredStudents = initialStudents.filter(s => 
     s.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.nickname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type })
+  }
 
   const handleTransaction = async () => {
     if (!amount || !concept || !selectedStudent) return
@@ -46,14 +49,15 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
     })
 
     if (!error) {
-      alert(`✅ ¡Puntos enviados!`)
+      showToast(`Enviados ${finalAmount}⚡ a ${selectedStudent.nickname}`, 'success')
+      
       setSelectedStudent(null)
       setAmount('')
       setConcept('')
       router.refresh() 
     } else {
       console.error('Error:', error)
-      alert('❌ Error al guardar transacción')
+      showToast('Error al guardar la transacción', 'error')
     }
     setLoading(false)
   }
@@ -65,7 +69,15 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
 
   return (
     <div>
-      {/* 🚀 SECCIÓN: ACCIONES RÁPIDAS */}
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
+
+      {/* SECCIÓN: ACCIONES RÁPIDAS */}
       <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
         
         {/* BOTÓN 1: QR */}
@@ -92,7 +104,7 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
           </div>
         </Link>
 
-        {/* BOTÓN 2: MEJORAS PERMANENTES (MOCHILA) */}
+        {/* BOTÓN 2: MEJORAS PERMANENTES */}
         <button 
           onClick={() => setShowUnlocksModal(true)}
           className="group relative overflow-hidden p-6 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-slate-700 shadow-xl hover:shadow-2xl hover:border-yellow-500/50 hover:scale-[1.01] transition-all duration-300 text-left"
@@ -101,9 +113,7 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
           
           <div className="relative z-10 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {/* Contenedor del Icono */}
               <div className="w-12 h-12 bg-slate-700/50 rounded-xl flex items-center justify-center backdrop-blur-sm shadow-inner border border-slate-600 group-hover:border-yellow-500/30 transition-colors">
-                {/* Usamos la Mochila rellena */}
                 <BsBackpackFill className="text-yellow-500 text-2xl group-hover:scale-110 transition-transform" />
               </div>
               <div>
@@ -120,7 +130,7 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
 
       </div>
 
-      {/* 🔍 BUSCADOR */}
+      {/* BUSCADOR */}
       <div className="relative mb-6 sticky top-4 z-10">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <FaSearch className="text-slate-500" />
@@ -134,46 +144,76 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
         />
       </div>
 
-      {/* 📋 LISTA DE ALUMNOS */}
+      {/* LISTA DE ALUMNOS */}
       <div className="grid gap-3">
         {filteredStudents.length === 0 && (
           <p className="text-center text-slate-500 py-8">No se encontraron alumnos</p>
         )}
         
-        {filteredStudents.map((student) => (
-          <div 
-            key={student.id}
-            onClick={() => {
-              setSelectedStudent(student)
-              setConcept('')
-              setAmount('')
-            }}
-            className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between hover:border-yellow-400/50 cursor-pointer transition-all active:scale-[0.98]"
-          >
-            <div className="flex items-center gap-3">
-              {student.avatar_url ? (
-                <img src={student.avatar_url} className="w-12 h-12 rounded-full object-cover bg-slate-800" />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-500">
-                  <FaUserGraduate size={20} />
+        {filteredStudents.map((student) => {
+          const rawTeam = Array.isArray(student.teams) ? student.teams[0] : student.teams
+          const teamDisplay = formatTeam(rawTeam) 
+          const TeamIcon = teamDisplay.Icon
+
+          return (
+            <div 
+              key={student.id}
+              onClick={() => {
+                setSelectedStudent(student)
+                setConcept('')
+                setAmount('')
+              }}
+              className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between hover:border-yellow-400/50 cursor-pointer transition-all active:scale-[0.98]"
+            >
+              <div className="flex items-center gap-3">
+                {student.avatar_url ? (
+                  <img 
+                    src={student.avatar_url} 
+                    className="w-12 h-12 rounded-full object-cover bg-slate-800 border-2" 
+                    style={{ borderColor: teamDisplay.styles.border.borderColor }}
+                    alt={student.nickname}
+                  />
+                ) : (
+                  <div 
+                    className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 border-2"
+                    style={{ borderColor: teamDisplay.styles.border.borderColor }}
+                  >
+                    <FaUserGraduate size={20} style={{ color: teamDisplay.styles.text.color }} />
+                  </div>
+                )}
+                
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white text-lg leading-tight">
+                        {student.nickname || 'Sin Apodo'}
+                    </span>
+                    {teamDisplay.id !== 'unknown' && (
+                        <div 
+                            className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-800 border border-slate-700"
+                            title={`Facción: ${teamDisplay.name}`}
+                        >
+                            <TeamIcon 
+                                className="text-[10px]" 
+                                style={{ color: teamDisplay.styles.text.color }} 
+                            />
+                        </div>
+                    )}
+                  </div>
+                  
+                  <span className="text-xs text-slate-400">{student.full_name}</span>
                 </div>
-              )}
-              
-              <div className="flex flex-col">
-                <span className="font-bold text-white text-lg leading-tight">{student.nickname || 'Sin Apodo'}</span>
-                <span className="text-xs text-slate-400">{student.full_name}</span>
+              </div>
+
+              <div className="text-right bg-black/20 px-3 py-1 rounded-lg">
+                <span className="text-yellow-400 font-mono font-bold text-xl">{student.current_balance}</span>
+                <span className="text-yellow-400/50 text-xs ml-1">⚡</span>
               </div>
             </div>
-
-            <div className="text-right bg-black/20 px-3 py-1 rounded-lg">
-              <span className="text-yellow-400 font-mono font-bold text-xl">{student.current_balance}</span>
-              <span className="text-yellow-400/50 text-xs ml-1">⚡</span>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      {/* 🛠 MODAL DE GESTIÓN (TRANSACCIONES) */}
+      {/* MODAL DE GESTIÓN (TRANSACCIONES) */}
       {selectedStudent && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
           <div className="bg-slate-800 w-full max-w-md sm:rounded-2xl rounded-t-3xl p-6 border-t sm:border border-slate-700 animate-in slide-in-from-bottom-10 shadow-2xl overflow-y-auto max-h-[90vh]">
@@ -267,12 +307,11 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
         </div>
       )}
 
-      {/* 🛡️ NUEVO MODAL: LISTA DE MEJORAS PERMANENTES */}
+      {/* MODAL: MEJORAS PERMANENTES */}
       {showUnlocksModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-slate-900 w-full max-w-4xl max-h-[85vh] rounded-2xl border border-slate-700 shadow-2xl flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200">
                 
-                {/* Botón Cerrar */}
                 <button 
                     onClick={() => setShowUnlocksModal(false)}
                     className="absolute top-4 right-4 z-10 p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500/50 border border-transparent transition-all"
@@ -280,13 +319,11 @@ export default function AdminDashboard({ initialStudents }: { initialStudents: a
                     <FaTimes />
                 </button>
 
-                {/* Contenido: La Tabla */}
                 <div className="flex-1 overflow-hidden p-1 flex flex-col">
-                   <PermanentUnlocksTable />
+                    <PermanentUnlocksTable />
                 </div>
             </div>
             
-            {/* Click fuera para cerrar */}
             <div className="absolute inset-0 -z-10" onClick={() => setShowUnlocksModal(false)}></div>
         </div>
       )}

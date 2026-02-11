@@ -1,12 +1,9 @@
-// Ruta: components/leaderboard/TeamLeaderboard.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FaTrophy } from 'react-icons/fa'
 import { TeamAssignment } from './TeamAssignment' 
 import { useRouter } from 'next/navigation'
-// Importamos el nuevo componente
 import TeamLeaderboardCard, { TeamLeaderboardEntry } from './TeamLeaderboardCard'
 
 export default function TeamLeaderboard() {
@@ -85,39 +82,39 @@ export default function TeamLeaderboard() {
   return (
     <div className="w-full max-w-4xl mx-auto mt-8 px-4">
       
-      {/* Cabecera de la sección */}
-      <div className="flex flex-col items-center text-center mb-10">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-400 mb-4 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.3)]">
-          <FaTrophy className="text-3xl" />
-        </div>
-        <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-2">
-          Guerra de Facciones
-        </h2>
-        <p className="text-slate-400 max-w-lg mx-auto">
-          Compite junto a tu equipo. La puntuación total es la suma de la energía generada por todos los miembros activos.
-        </p>
-      </div>
-
       {/* Lista de Tarjetas */}
-      <div className="space-y-4">
+      <div className="flex flex-col items-center w-full space-y-3">
         {teamData.length === 0 ? (
-          <div className="text-center py-12 bg-slate-900/50 rounded-2xl border border-slate-800">
+          <div className="text-center py-12 bg-slate-900/50 rounded-2xl border border-slate-800 w-full">
              <p className="text-slate-500">No hay datos disponibles en este momento.</p>
           </div>
         ) : (
-          teamData.map((team, index) => (
-            <TeamLeaderboardCard 
-              key={team.id} 
-              entry={team} 
-              rank={index + 1} 
-            />
-          ))
+          teamData.map((team, index) => {
+            const isFirst = index === 0;
+            
+            return (
+              <div 
+                key={team.id}
+                className={`w-full transition-all duration-500 ${isFirst ? 'mb-8 z-10' : 'opacity-90 hover:opacity-100'}`}
+                style={isFirst ? {
+                    // Brillo potente: Una sombra dura y otra difusa del color del equipo
+                    boxShadow: `0 0 40px -10px ${team.hex_color}50, 0 0 10px ${team.hex_color}40`,
+                    transform: 'translateY(-5px)' // Pequeña elevación
+                } : undefined}
+              >
+                <TeamLeaderboardCard 
+                  entry={team} 
+                  rank={index + 1} 
+                />
+              </div>
+            )
+          })
         )}
       </div>
 
-      <div className="mt-8 text-center">
-        <p className="text-xs text-slate-600">
-          * La clasificación se actualiza en tiempo real basado en la actividad de los usuarios.
+      <div className="mt-12 text-center opacity-0 hover:opacity-100 transition-opacity duration-700">
+        <p className="text-[10px] text-slate-700">
+          Clasificación dinámica en tiempo real
         </p>
       </div>
 

@@ -4,8 +4,10 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
-import { FaInfoCircle, FaTimes, FaMagic, FaMicrochip, FaLock, FaBolt } from 'react-icons/fa' // Nuevos iconos
+import { FaInfoCircle, FaTimes, FaMagic, FaMicrochip, FaLock, FaBolt } from 'react-icons/fa'
 import ProductArtifact from '@/components/ProductArtifact'
+// 1. IMPORTAR EL BOTÓN
+import LootRatesButton from '@/components/loot/LootRatesButton'
 
 interface StackedItem {
   product_id: string
@@ -16,9 +18,8 @@ interface StackedItem {
   quantity: number
 }
 
-// Definimos las Props que recibe este componente
 interface InventoryItemsProps {
-    onSwitchToFiles: () => void; // La función que nos pasa el padre
+    onSwitchToFiles: () => void;
 }
 
 export default function InventoryItems({ onSwitchToFiles }: InventoryItemsProps) {
@@ -98,8 +99,6 @@ export default function InventoryItems({ onSwitchToFiles }: InventoryItemsProps)
     setSelectedItem(null)
   }
 
-  // Helper para saber si el item es "usable" directamente (Pociones, items normales)
-  // Devuelve true SOLO si NO es permanente ni lootbox
   const isDirectlyUsable = (category: string) => {
     return category !== 'permanente' && category !== 'lootbox'
   }
@@ -122,32 +121,51 @@ export default function InventoryItems({ onSwitchToFiles }: InventoryItemsProps)
   return (
     <>
         <div className="grid grid-cols-2 gap-4">
-            {inventory.map((item) => (
-                <div key={item.product_id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col items-center relative group overflow-hidden shadow-lg transition-colors hover:border-slate-700">
-                    
-                    <div className="mb-3 transform group-hover:scale-105 transition-transform duration-300 relative inline-block">
-                        <ProductArtifact iconName={item.image_icon} />
+            {inventory.map((item) => {
+                // Lógica para saber si mostrar el botón de loot
+                const isMysteryBox = item.category === 'lootbox' || 
+                                     item.name.toLowerCase().includes('caja') || 
+                                     item.image_icon.includes('loot');
 
-                        <div className="absolute -bottom-2 -right-2 bg-slate-950 text-indigo-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-slate-800 shadow-md z-10 font-mono leading-none flex items-center justify-center min-w-[18px] h-[18px]">
-                            x{item.quantity}
+                return (
+                    <div key={item.product_id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col items-center relative group overflow-hidden shadow-lg transition-colors hover:border-slate-700">
+                        
+                        <div className="mb-3 transform group-hover:scale-105 transition-transform duration-300 relative inline-block">
+                            <ProductArtifact iconName={item.image_icon} />
+
+                            <div className="absolute -bottom-2 -right-2 bg-slate-950 text-indigo-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-slate-800 shadow-md z-10 font-mono leading-none flex items-center justify-center min-w-[18px] h-[18px]">
+                                x{item.quantity}
+                            </div>
                         </div>
-                    </div>
 
-                    <h3 className="text-sm font-bold text-slate-200 text-center leading-tight mb-3 min-h-[2.5em] flex items-center justify-center">
-                        {item.name}
-                    </h3>
-                    
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedItem(item);
-                        }}
-                        className="cursor-pointer relative z-20 text-[10px] uppercase tracking-wider font-bold text-slate-400 hover:text-indigo-300 border border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800 px-3 py-1.5 rounded-full transition-all w-full flex items-center justify-center gap-1 active:scale-95"
-                    >
-                        <FaInfoCircle size={10} /> Examinar
-                    </button>
-                </div>
-            ))}
+                        {/* 2. NOMBRE + BOTÓN DE PROBABILIDADES */}
+                        <div className="flex items-center justify-center gap-2 mb-3 min-h-[2.5em] w-full">
+                            <h3 className="text-sm font-bold text-slate-200 text-center leading-tight">
+                                {item.name}
+                            </h3>
+                            {isMysteryBox && (
+                                <div onClick={(e) => e.stopPropagation()}>
+                                    <LootRatesButton 
+                                        minimal={true}
+                                        iconName={item.image_icon}
+                                        className="!p-0 text-slate-500 hover:text-yellow-400 transition-colors"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedItem(item);
+                            }}
+                            className="cursor-pointer relative z-20 text-[10px] uppercase tracking-wider font-bold text-slate-400 hover:text-indigo-300 border border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800 px-3 py-1.5 rounded-full transition-all w-full flex items-center justify-center gap-1 active:scale-95"
+                        >
+                            <FaInfoCircle size={10} /> Examinar
+                        </button>
+                    </div>
+                )
+            })}
         </div>
 
         {/* --- MODAL --- */}
@@ -165,11 +183,22 @@ export default function InventoryItems({ onSwitchToFiles }: InventoryItemsProps)
                <div className="mb-6 mt-4 p-4 relative">
                   <div className="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-full"></div>
                   <div className="transform scale-150 relative z-10">
-                     <ProductArtifact iconName={selectedItem.image_icon} />
+                      <ProductArtifact iconName={selectedItem.image_icon} />
                   </div>
                </div>
                
-               <h2 className="text-xl font-bold text-white mb-1">{selectedItem.name}</h2>
+               <div className="flex items-center justify-center gap-2 mb-1">
+                    <h2 className="text-xl font-bold text-white">{selectedItem.name}</h2>
+                    {/* También lo añadimos en el título del modal si es caja */}
+                    {(selectedItem.category === 'lootbox' || selectedItem.name.toLowerCase().includes('caja')) && (
+                         <LootRatesButton 
+                            minimal={true}
+                            iconName={selectedItem.image_icon}
+                            className="!p-0 text-slate-500 hover:text-yellow-400 transition-colors"
+                        />
+                    )}
+               </div>
+
                <span className="text-[10px] text-slate-500 uppercase tracking-widest mb-4 border border-slate-800 px-2 py-0.5 rounded-full">
                   {selectedItem.category}
                </span>
@@ -188,7 +217,6 @@ export default function InventoryItems({ onSwitchToFiles }: InventoryItemsProps)
 
                   {/* LÓGICA DE BOTONES SEGÚN CATEGORÍA */}
                   
-                  {/* CASO 1: OBJETO NORMAL (USABLE) */}
                   {isDirectlyUsable(selectedItem.category) && (
                       <button 
                         onClick={handleUseItem}
@@ -199,21 +227,18 @@ export default function InventoryItems({ onSwitchToFiles }: InventoryItemsProps)
                       </button>
                   )}
 
-                  {/* CASO 2: LOOTBOX (Cajas de Alta Tensión) */}
                   {selectedItem.category === 'lootbox' && (
                       <button 
                         onClick={() => {
-                            setSelectedItem(null); // Cerramos modal
-                            onSwitchToFiles();     // Vamos al Banco de Memoria
+                            setSelectedItem(null); 
+                            onSwitchToFiles();    
                         }}
                         className="flex-1 py-3 px-2 rounded-xl font-bold text-xs bg-yellow-500/10 text-yellow-500 border border-yellow-500/50 hover:bg-yellow-500 hover:text-slate-900 hover:border-yellow-400 flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(234,179,8,0.2)]"
                       >
-                        {/* He cambiado el estilo a Amarillo (Yellow) para indicar Peligro/Electricidad */}
                         <FaBolt size={14} /> DESCARGAR
                       </button>
                   )}
 
-                  {/* CASO 3: PERMANENTE (SOLO INFO) */}
                   {selectedItem.category === 'permanente' && (
                       <div className="flex-1 py-3 px-6 rounded-xl font-bold text-xs bg-slate-800 text-slate-500 border border-slate-700 flex items-center justify-center gap-2 cursor-default">
                           <FaLock size={10} /> PASIVO

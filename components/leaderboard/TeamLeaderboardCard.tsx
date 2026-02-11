@@ -1,4 +1,3 @@
-// Ruta: components/leaderboard/TeamLeaderboardCard.tsx
 import { FaBolt, FaUsers, FaTrophy, FaMedal } from 'react-icons/fa'
 import { formatTeam } from '@/utils/teams'
 
@@ -18,18 +17,18 @@ interface CardProps {
 
 export default function TeamLeaderboardCard({ entry, rank }: CardProps) {
   
-  // 1. Usamos tu utilidad para obtener el icono y estilos procesados
   const teamStyles = formatTeam(entry)
   const FactionIcon = teamStyles.Icon
+  const isFirst = rank === 1
 
   // 2. Estilos según ranking
   const getRankStyle = (position: number) => {
     switch (position) {
       case 1:
         return {
-          rankIcon: <FaTrophy className="text-yellow-400 text-xl drop-shadow-md" />,
+          rankIcon: <FaTrophy className="text-yellow-400 text-3xl drop-shadow-md" />, // Icono más grande
           border: 'border-yellow-500/50',
-          bg: 'bg-gradient-to-r from-yellow-500/10 to-slate-900/40',
+          bg: 'bg-gradient-to-r from-yellow-500/20 to-slate-900/80', // Fondo un poco más evidente
         }
       case 2:
         return {
@@ -56,7 +55,8 @@ export default function TeamLeaderboardCard({ entry, rank }: CardProps) {
 
   return (
     <div 
-      className={`relative w-full flex items-center justify-between p-4 rounded-xl border ${rankStyle.border} ${rankStyle.bg} transition-all duration-300 hover:scale-[1.01] hover:shadow-lg mb-3`}
+      // CONDICIONAL: Si es primero (isFirst), usamos p-6 (más alto), si no p-4
+      className={`relative w-full flex items-center justify-between rounded-xl border ${rankStyle.border} ${rankStyle.bg} transition-all duration-300 hover:scale-[1.01] ${isFirst ? 'p-6 sm:p-8' : 'p-4'}`}
       style={{
         boxShadow: `inset 0 0 20px ${entry.hex_color}05`
       }}
@@ -67,7 +67,7 @@ export default function TeamLeaderboardCard({ entry, rank }: CardProps) {
         style={{ backgroundColor: entry.hex_color, boxShadow: `0 0 15px ${entry.hex_color}80` }}
       />
 
-      {/* SECCIÓN IZQUIERDA: Rank + Icono + Nombre */}
+      {/* SECCIÓN IZQUIERDA */}
       <div className="flex items-center gap-5 pl-4">
         
         {/* Ranking */}
@@ -76,20 +76,23 @@ export default function TeamLeaderboardCard({ entry, rank }: CardProps) {
         </div>
 
         <div className="flex items-center gap-4">
-            {/* Icono de Facción en círculo */}
+            {/* Icono de Facción: Más grande si es primero */}
             <div 
-                className="w-10 h-10 rounded-full flex items-center justify-center border bg-slate-950/50 backdrop-blur-sm"
+                className={`rounded-full flex items-center justify-center border bg-slate-950/50 backdrop-blur-sm transition-all ${isFirst ? 'w-16 h-16' : 'w-10 h-10'}`}
                 style={{ 
                     borderColor: entry.hex_color,
-                    boxShadow: `0 0 10px ${entry.hex_color}40`
+                    boxShadow: `0 0 ${isFirst ? '20px' : '10px'} ${entry.hex_color}40`
                 }}
             >
-                <FactionIcon className="text-lg" style={{ color: entry.hex_color }} />
+                <FactionIcon 
+                  className={`transition-all ${isFirst ? 'text-3xl' : 'text-lg'}`} 
+                  style={{ color: entry.hex_color }} 
+                />
             </div>
 
-            {/* Nombre de la Facción (Coloreado y limpio) */}
+            {/* Nombre: Más grande si es primero */}
             <h4 
-              className="text-xl font-black tracking-tight drop-shadow-sm" 
+              className={`font-black tracking-tight drop-shadow-sm ${isFirst ? 'text-3xl' : 'text-xl'}`}
               style={{ color: entry.hex_color }}
             >
                 {entry.name}
@@ -97,21 +100,19 @@ export default function TeamLeaderboardCard({ entry, rank }: CardProps) {
         </div>
       </div>
 
-      {/* SECCIÓN DERECHA: Estadísticas (Sin etiquetas de texto) */}
+      {/* SECCIÓN DERECHA */}
       <div className="flex items-center gap-6 sm:gap-8 pr-2">
         
-        {/* Miembros */}
-        <div className="hidden sm:flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity" title="Miembros activos">
+        <div className="hidden sm:flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
           <span className="text-slate-300 font-mono text-sm font-bold">{entry.member_count}</span>
           <FaUsers className="text-slate-400 text-xs" />
         </div>
 
-        {/* Puntuación */}
-        <div className="flex items-center gap-2 min-w-[80px] justify-end" title="Energía total">
-          <span className="text-white font-mono text-xl font-bold drop-shadow-md">
+        <div className="flex items-center gap-2 min-w-[80px] justify-end">
+          <span className={`text-white font-mono font-bold drop-shadow-md ${isFirst ? 'text-3xl' : 'text-xl'}`}>
             {entry.total_score.toLocaleString()}
           </span>
-          <FaBolt className="text-yellow-400 text-sm animate-pulse" />
+          <FaBolt className={`text-yellow-400 animate-pulse ${isFirst ? 'text-xl' : 'text-sm'}`} />
         </div>
 
       </div>

@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
 import { FaArrowLeft, FaBolt, FaShoppingCart, FaLock, FaBoxOpen, FaBan, FaTimes, FaCheck } from 'react-icons/fa'
 import ProductArtifact from '@/components/ProductArtifact'
+import LootRatesButton from '@/components/loot/LootRatesButton'
 
 interface Product {
   id: string
@@ -24,10 +25,7 @@ export default function ShopPage() {
   const [myBalance, setMyBalance] = useState(0)
   const [ownedCounts, setOwnedCounts] = useState<Record<string, number>>({})
   
-  // Estado para la lógica de compra
   const [purchasingId, setPurchasingId] = useState<string | null>(null)
-  
-  // NUEVO: Estado para el producto que estamos "pensando" comprar (abre el modal)
   const [confirmingProduct, setConfirmingProduct] = useState<Product | null>(null)
 
   const supabase = createClient()
@@ -36,7 +34,6 @@ export default function ShopPage() {
     const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser()
 
-      // 1. Cargar catálogo
       const { data: productsData } = await supabase
         .from('shop_products')
         .select('*')
@@ -46,7 +43,6 @@ export default function ShopPage() {
       if (productsData) setProducts(productsData)
 
       if (user) {
-        // 2. Cargar saldo
         const { data: profile } = await supabase
           .from('profiles')
           .select('current_balance')
@@ -54,7 +50,6 @@ export default function ShopPage() {
           .single()
         if (profile) setMyBalance(profile.current_balance)
 
-        // 3. Cargar inventario
         const { data: inventoryData } = await supabase
           .from('user_inventory')
           .select('product_id')
@@ -68,18 +63,15 @@ export default function ShopPage() {
           setOwnedCounts(counts)
         }
       }
-      
       setLoading(false)
     }
 
     fetchData()
   }, [])
 
-  // --- LÓGICA DE EJECUCIÓN REAL (Se llama DESDE el modal) ---
   const executePurchase = async () => {
     if (!confirmingProduct) return
     
-    // Cerramos el modal y ponemos estado de carga
     const product = confirmingProduct
     setConfirmingProduct(null) 
     setPurchasingId(product.id)
@@ -94,21 +86,17 @@ export default function ShopPage() {
       if (data.success) {
         setMyBalance(data.new_balance)
         
-        // Actualizar stock local
         if (product.stock !== null) {
             setProducts(prev => prev.map(p => 
                 p.id === product.id ? { ...p, stock: (p.stock as number) - 1 } : p
             ))
         }
 
-        // Actualizar conteo local
         setOwnedCounts(prev => ({
             ...prev,
             [product.id]: (prev[product.id] || 0) + 1
         }))
 
-        // Opcional: Feedback visual de éxito (toast) en lugar de alert
-        // alert(`¡Has comprado: ${product.name}!`) 
       } else {
         alert(data.message)
       }
@@ -131,7 +119,7 @@ export default function ShopPage() {
               <FaArrowLeft />
             </Link>
             <h1 className="text-xl font-bold text-white flex items-center gap-2 tracking-wide">
-              ALMACÉN
+              TIENDA DE ELECTRONES
             </h1>
           </div>
           
@@ -156,6 +144,11 @@ export default function ShopPage() {
               const isMaxReached = product.max_per_user !== null && ownedAmount >= product.max_per_user
               const isButtonEnabled = canAfford && !isOutOfStock && !isBuying && !isMaxReached
 
+              // DETECCIÓN: ¿Es este producto una caja misteriosa?
+              const isMysteryBox = product.name.toLowerCase().includes('caja') || 
+                                   product.name.toLowerCase().includes('box') ||
+                                   product.image_icon.includes('loot')
+
               return (
                 <div 
                   key={product.id} 
@@ -170,10 +163,26 @@ export default function ShopPage() {
 
                   <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 relative z-10">
                     <div>
+                      {/* CABECERA DE LA TARJETA: NOMBRE + BOTÓN INFO + PRECIO */}
                       <div className="flex justify-between items-start mb-1">
-                        <h3 className="text-base font-bold text-white leading-tight pr-2 font-sans tracking-tight">
-                          {product.name}
-                        </h3>
+                        
+                        {/* Contenedor Nombre + Botón Info */}
+                        <div className="flex items-center gap-2 pr-2">
+                            <h3 className="text-base font-bold text-white leading-tight font-sans tracking-tight">
+                                {product.name}
+                            </h3>
+                            
+                            {/* AQUÍ ESTÁ EL BOTÓN DE INFO AHORA */}
+                            {isMysteryBox && (
+                                <LootRatesButton 
+                                    minimal={true}
+                                    iconName={product.image_icon}
+                                    className="!p-0 hover:!text-yellow-400 text-slate-500 transition-colors"
+                                />
+                            )}
+                        </div>
+
+                        {/* Precio */}
                         <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border shrink-0 ${canAfford ? 'bg-slate-900 border-slate-600' : 'bg-red-900/10 border-red-900/30'}`}>
                           <FaBolt className={`text-[10px] ${canAfford ? 'text-yellow-400' : 'text-slate-600'}`} />
                           <span className={`text-xs font-bold font-mono ${canAfford ? 'text-white' : 'text-slate-500'}`}>
@@ -186,16 +195,18 @@ export default function ShopPage() {
                         <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
                             {product.description}
                         </p>
+                        
                         {product.max_per_user && (
                             <p className="text-[10px] text-slate-500 mt-1 font-mono">
                                 Tienes: {ownedAmount} / {product.max_per_user}
                             </p>
                         )}
+                        
+                        {/* (El botón de LootRatesButton se eliminó de aquí) */}
                       </div>
                     </div>
 
                     <button 
-                      // 1. CAMBIO: En vez de comprar directo, guardamos el producto en 'confirmingProduct'
                       onClick={() => setConfirmingProduct(product)}
                       disabled={!isButtonEnabled}
                       className={`
@@ -236,11 +247,10 @@ export default function ShopPage() {
           </div>
         )}
 
-        {/* --- MODAL DE CONFIRMACIÓN --- */}
+        {/* MODAL DE CONFIRMACIÓN */}
         {confirmingProduct && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl transform transition-all scale-100 relative overflow-hidden">
-               {/* Fondo decorativo sutil */}
                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"></div>
                
                <h3 className="text-lg font-bold text-white mb-2">Confirmar Transacción</h3>

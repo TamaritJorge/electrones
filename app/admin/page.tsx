@@ -12,23 +12,24 @@ export default async function AdminPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // 2. Verificamos si eres ADMIN (consultando tu tabla profiles)
+  // 2. Verificamos si eres ADMIN
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
 
-  // Si no es admin, a la calle (o al home)
   if (profile?.role !== 'admin') {
     redirect('/') 
   }
 
-  // 3. Obtenemos lista de alumnos para mostrarlos en el buscador
+  // 3. Obtenemos lista de alumnos + DATOS DEL EQUIPO
   const { data: students } = await supabase
     .from('profiles')
-    .select('*')
-    .eq('role', 'student') // Filtramos para no ver a otros profes
+    // CAMBIO IMPORTANTE AQUÍ:
+    // Añadimos ", teams(*)" para que traiga los datos de la tabla relacionada
+    .select('*, teams(*)') 
+    .eq('role', 'student') 
     .order('full_name')
 
   return (
