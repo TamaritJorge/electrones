@@ -117,7 +117,6 @@ export default function LootRatesModal({ onClose, iconName }: Props) {
           
           <div className="flex-1 min-w-0">
               <h3 className="text-white font-black text-xl leading-tight tracking-tight">Probabilidades</h3>
-              <p className="text-slate-400 text-sm font-medium">Tabla de botín</p>
           </div>
 
           <button 

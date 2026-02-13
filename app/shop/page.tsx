@@ -4,10 +4,10 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
-import { FaArrowLeft, FaBolt, FaShoppingCart, FaLock, FaBoxOpen, FaBan, FaTimes, FaCheck } from 'react-icons/fa'
-import ProductArtifact from '@/components/ProductArtifact'
-import LootRatesButton from '@/components/loot/LootRatesButton'
+import { FaArrowLeft, FaBolt, FaStore, FaUsers } from 'react-icons/fa'
+import ProductCard from '@/components/shop/ProductCard'
 
+// Interfaces
 interface Product {
   id: string
   name: string
@@ -15,88 +15,143 @@ interface Product {
   price: number
   image_icon: string
   category: string
-  stock: number | null     
+  stock: number | null
   max_per_user: number | null
+  purchase_type: 'individual' | 'team' | 'global'
+}
+
+interface Campaign {
+  id: string
+  product_id: string
+  current_amount: number
+  target_amount: number
+  is_completed: boolean
 }
 
 export default function ShopPage() {
+  // Estados de datos
   const [products, setProducts] = useState<Product[]>([])
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [activeTab, setActiveTab] = useState<'individual' | 'collective'>('individual')
+  
+  // Estados de usuario e interfaz
   const [loading, setLoading] = useState(true)
   const [myBalance, setMyBalance] = useState(0)
   const [ownedCounts, setOwnedCounts] = useState<Record<string, number>>({})
-  
+  const [claimedCampaigns, setClaimedCampaigns] = useState<Set<string>>(new Set())
   const [purchasingId, setPurchasingId] = useState<string | null>(null)
+  
+  // NUEVO: Estado para guardar la info del equipo del usuario
+  const [teamInfo, setTeamInfo] = useState<{ hex_color?: string, icon_key?: string } | null>(null)
+  
+  // Estados de modales
   const [confirmingProduct, setConfirmingProduct] = useState<Product | null>(null)
+  const [contributingCampaign, setContributingCampaign] = useState<Campaign | null>(null)
+  const [contributionAmount, setContributionAmount] = useState<number>(100)
 
   const supabase = createClient()
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+  // 1. FUNCIÓN DE CARGA DE DATOS (Recarga suave)
+  const loadShopData = async () => {
+    setLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
-      const { data: productsData } = await supabase
-        .from('shop_products')
-        .select('*')
-        .eq('is_active', true)
-        .order('price', { ascending: true })
-
-      if (productsData) setProducts(productsData)
-
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('current_balance')
-          .eq('id', user.id)
+    // Cargar Perfil
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('current_balance, team')
+      .eq('id', user.id)
+      .single()
+      
+    if (profile) {
+      setMyBalance(profile.current_balance)
+      
+      // NUEVO: Cargar info del equipo usando los nombres exactos de tus columnas
+      if (profile.team) {
+        const { data: teamData } = await supabase
+          .from('teams')
+          .select('hex_color, icon_key')
+          .eq('id', profile.team)
           .single()
-        if (profile) setMyBalance(profile.current_balance)
-
-        const { data: inventoryData } = await supabase
-          .from('user_inventory')
-          .select('product_id')
-          .eq('user_id', user.id)
-        
-        if (inventoryData) {
-          const counts: Record<string, number> = {}
-          inventoryData.forEach((item) => {
-            counts[item.product_id] = (counts[item.product_id] || 0) + 1
-          })
-          setOwnedCounts(counts)
+          
+        if (teamData) {
+          setTeamInfo(teamData)
         }
       }
-      setLoading(false)
     }
 
-    fetchData()
+    // Cargar Productos
+    const { data: productsData } = await supabase
+      .from('shop_products')
+      .select('*')
+      .eq('is_active', true)
+      .order('price', { ascending: true })
+      
+    if (productsData) setProducts(productsData)
+
+    // Cargar Campañas
+    const { data: campaignsData } = await supabase
+      .from('crowdfunding_campaigns')
+      .select('*')
+      .or(`team_id.is.null,team_id.eq.${profile?.team}`)
+      .order('created_at', { ascending: false })
+    
+    // Filtrar para quedarnos solo con la campaña más reciente de cada producto
+    if (campaignsData) {
+      const latestCampaigns: Campaign[] = []
+      const seen = new Set()
+      campaignsData.forEach(camp => {
+        if (!seen.has(camp.product_id)) {
+          latestCampaigns.push(camp)
+          seen.add(camp.product_id)
+        }
+      })
+      setCampaigns(latestCampaigns)
+    }
+
+    // Cargar Reclamos del usuario
+    const { data: claimsData } = await supabase
+      .from('crowdfunding_claims')
+      .select('campaign_id')
+      .eq('user_id', user.id)
+      
+    if (claimsData) {
+      setClaimedCampaigns(new Set(claimsData.map(c => c.campaign_id)))
+    }
+
+    // Cargar Inventario
+    const { data: inventoryData } = await supabase
+      .from('user_inventory')
+      .select('product_id')
+      .eq('user_id', user.id)
+      
+    if (inventoryData) {
+      const counts: Record<string, number> = {}
+      inventoryData.forEach(item => counts[item.product_id] = (counts[item.product_id] || 0) + 1)
+      setOwnedCounts(counts)
+    }
+
+    setLoading(false)
+  }
+
+  // Ejecutar carga inicial
+  useEffect(() => {
+    loadShopData()
   }, [])
 
+  // 2. ACCIONES
   const executePurchase = async () => {
     if (!confirmingProduct) return
-    
     const product = confirmingProduct
     setConfirmingProduct(null) 
     setPurchasingId(product.id)
 
     try {
-      const { data, error } = await supabase.rpc('buy_item', { 
-        p_product_id: product.id 
-      })
-
+      const { data, error } = await supabase.rpc('buy_item', { p_product_id: product.id })
       if (error) throw error
-
       if (data.success) {
-        setMyBalance(data.new_balance)
-        
-        if (product.stock !== null) {
-            setProducts(prev => prev.map(p => 
-                p.id === product.id ? { ...p, stock: (p.stock as number) - 1 } : p
-            ))
-        }
-
-        setOwnedCounts(prev => ({
-            ...prev,
-            [product.id]: (prev[product.id] || 0) + 1
-        }))
-
+        await loadShopData()
       } else {
         alert(data.message)
       }
@@ -107,6 +162,75 @@ export default function ShopPage() {
       setPurchasingId(null)
     }
   }
+
+  const startCampaign = async (productId: string) => {
+    setPurchasingId(productId)
+    try {
+      const { data, error } = await supabase.rpc('create_crowdfunding_campaign', { target_product_id: productId })
+      if (error) throw error
+      if (data.success) {
+        await loadShopData() 
+      } else {
+        alert(data.message)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setPurchasingId(null)
+    }
+  }
+
+  const executeContribution = async () => {
+    if (!contributingCampaign) return
+    const amount = contributionAmount
+    const campId = contributingCampaign.id
+    setContributingCampaign(null)
+    setPurchasingId(campId)
+
+    try {
+      const { data, error } = await supabase.rpc('contribute_to_campaign', { 
+        campaign_uuid: campId, 
+        contribution_amount: amount 
+      })
+      
+      if (error) throw error
+      if (data.success) {
+        if (data.campaign_completed) {
+          alert("¡CAMPAÑA COMPLETADA! ¡LO LOGRASTEIS!")
+        }
+        await loadShopData()
+      } else {
+        alert(data.message)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setPurchasingId(null)
+    }
+  }
+
+  const executeClaim = async (campaignId: string) => {
+    setPurchasingId(campaignId)
+    try {
+      const { data, error } = await supabase.rpc('claim_campaign_reward', { p_campaign_id: campaignId })
+      if (error) throw error
+      if (data.success) {
+        await loadShopData()
+      } else {
+        alert(data.message)
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Error al reclamar el premio.')
+    } finally {
+      setPurchasingId(null)
+    }
+  }
+
+  // 3. FILTRADO PARA PESTAÑAS
+  const displayedProducts = products.filter(p => 
+    activeTab === 'individual' ? p.purchase_type === 'individual' : p.purchase_type !== 'individual'
+  )
 
   return (
     <main className="min-h-screen bg-slate-900 px-4 py-6 pb-24">
@@ -131,153 +255,112 @@ export default function ShopPage() {
           </div>
         </div>
 
+        {/* PESTAÑAS (TABS) */}
+        <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
+          <button 
+            onClick={() => setActiveTab('individual')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'individual' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            <FaStore /> Individuales
+          </button>
+          <button 
+            onClick={() => setActiveTab('collective')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'collective' ? 'bg-amber-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            <FaUsers /> Globales
+          </button>
+        </div>
+
         {/* LISTA DE PRODUCTOS */}
         {loading ? (
           <div className="text-center py-20 text-slate-500 animate-pulse font-mono">INICIANDO SISTEMA...</div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {products.map((product) => {
-              const isOutOfStock = product.stock !== null && product.stock <= 0
-              const canAfford = myBalance >= product.price
-              const isBuying = purchasingId === product.id
-              const ownedAmount = ownedCounts[product.id] || 0
-              const isMaxReached = product.max_per_user !== null && ownedAmount >= product.max_per_user
-              const isButtonEnabled = canAfford && !isOutOfStock && !isBuying && !isMaxReached
-
-              // DETECCIÓN: ¿Es este producto una caja misteriosa?
-              const isMysteryBox = product.name.toLowerCase().includes('caja') || 
-                                   product.name.toLowerCase().includes('box') ||
-                                   product.image_icon.includes('loot')
-
-              return (
-                <div 
-                  key={product.id} 
-                  className={`
-                    relative rounded-2xl p-4 flex gap-4 overflow-hidden transition-all duration-300
-                    ${isButtonEnabled 
-                        ? 'bg-slate-800 border border-slate-700' 
-                        : 'bg-slate-900/80 border border-slate-800 opacity-75 grayscale-[0.3]'}
-                  `}
-                >
-                  <ProductArtifact iconName={product.image_icon} />
-
-                  <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 relative z-10">
-                    <div>
-                      {/* CABECERA DE LA TARJETA: NOMBRE + BOTÓN INFO + PRECIO */}
-                      <div className="flex justify-between items-start mb-1">
-                        
-                        {/* Contenedor Nombre + Botón Info */}
-                        <div className="flex items-center gap-2 pr-2">
-                            <h3 className="text-base font-bold text-white leading-tight font-sans tracking-tight">
-                                {product.name}
-                            </h3>
-                            
-                            {/* AQUÍ ESTÁ EL BOTÓN DE INFO AHORA */}
-                            {isMysteryBox && (
-                                <LootRatesButton 
-                                    minimal={true}
-                                    iconName={product.image_icon}
-                                    className="!p-0 hover:!text-yellow-400 text-slate-500 transition-colors"
-                                />
-                            )}
-                        </div>
-
-                        {/* Precio */}
-                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border shrink-0 ${canAfford ? 'bg-slate-900 border-slate-600' : 'bg-red-900/10 border-red-900/30'}`}>
-                          <FaBolt className={`text-[10px] ${canAfford ? 'text-yellow-400' : 'text-slate-600'}`} />
-                          <span className={`text-xs font-bold font-mono ${canAfford ? 'text-white' : 'text-slate-500'}`}>
-                            {product.price}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mb-3">
-                        <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
-                            {product.description}
-                        </p>
-                        
-                        {product.max_per_user && (
-                            <p className="text-[10px] text-slate-500 mt-1 font-mono">
-                                Tienes: {ownedAmount} / {product.max_per_user}
-                            </p>
-                        )}
-                        
-                        {/* (El botón de LootRatesButton se eliminó de aquí) */}
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={() => setConfirmingProduct(product)}
-                      disabled={!isButtonEnabled}
-                      className={`
-                        w-full py-2 rounded-lg font-bold text-xs tracking-wider flex items-center justify-center gap-2 transition-all duration-150
-                        ${isButtonEnabled 
-                          ? 'bg-gradient-to-b from-indigo-500 to-indigo-700 border-t border-indigo-400/60 text-white shadow-[0_4px_12px_rgba(79,70,229,0.4)] hover:shadow-[0_6px_16px_rgba(79,70,229,0.6)] hover:from-indigo-400 hover:to-indigo-600 active:translate-y-[1px] active:shadow-none' 
-                          : 'bg-slate-800/50 text-slate-500 border border-slate-700/50 cursor-not-allowed bg-[image:repeating-linear-gradient(45deg,transparent,transparent_5px,rgba(0,0,0,0.2)_5px,rgba(0,0,0,0.2)_10px)]'}
-                      `}
-                    >
-                      {isBuying ? (
-                         "Procesando..."
-                      ) : isMaxReached ? (
-                        <>
-                           <FaBan size={11} />
-                           Máx. Alcanzado
-                        </>
-                      ) : isOutOfStock ? (
-                        <>
-                           <FaBoxOpen size={11} />
-                           Agotado
-                        </>
-                      ) : canAfford ? (
-                        <>
-                          <FaShoppingCart size={11} className="text-indigo-100" />
-                          Comprar
-                        </>
-                      ) : (
-                        <>
-                          <FaLock size={10} />
-                          Electrones Insuficientes
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
+            {displayedProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                myBalance={myBalance}
+                ownedAmount={ownedCounts[product.id] || 0}
+                isBuying={purchasingId === product.id || purchasingId === campaigns.find(c => c.product_id === product.id)?.id}
+                activeCampaign={campaigns.find(c => c.product_id === product.id)}
+                hasClaimed={claimedCampaigns.has(campaigns.find(c => c.product_id === product.id)?.id || '')}
+                
+                // NUEVO: Pasamos los datos del equipo a la tarjeta
+                teamColor={teamInfo?.hex_color}
+                teamIcon={teamInfo?.icon_key}
+                
+                onBuy={setConfirmingProduct}
+                onStartCampaign={startCampaign}
+                onClaim={executeClaim}
+                onContribute={(campaign) => {
+                  const amountNeeded = campaign.target_amount - campaign.current_amount
+                  const suggestedAmount = Math.min(myBalance, amountNeeded, 100)
+                  setContributionAmount(suggestedAmount)
+                  setContributingCampaign(campaign)
+                }}
+              />
+            ))}
+            
+            {/* Mensaje por si la pestaña está vacía */}
+            {displayedProducts.length === 0 && (
+              <div className="text-center py-10 text-slate-500">
+                No hay productos disponibles en esta categoría.
+              </div>
+            )}
           </div>
         )}
 
-        {/* MODAL DE CONFIRMACIÓN */}
+        {/* MODAL: COMPRA INDIVIDUAL */}
         {confirmingProduct && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl transform transition-all scale-100 relative overflow-hidden">
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-950/80 backdrop-blur-sm">
+            <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-6 relative overflow-hidden">
                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"></div>
-               
                <h3 className="text-lg font-bold text-white mb-2">Confirmar Transacción</h3>
-               
                <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-                 ¿Estás seguro de que quieres adquirir <strong className="text-white">{confirmingProduct.name}</strong> por un valor de:
+                 ¿Adquirir <strong className="text-white">{confirmingProduct.name}</strong>?
                </p>
-
                <div className="flex items-center justify-center gap-2 mb-8 bg-slate-950/50 p-3 rounded-xl border border-slate-800">
                   <FaBolt className="text-yellow-400" />
                   <span className="text-xl font-bold font-mono text-white tracking-wider">{confirmingProduct.price}</span>
                </div>
+               <div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => setConfirmingProduct(null)} className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">Cancelar</button>
+                  <button onClick={executePurchase} className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm bg-indigo-600 text-white shadow-lg shadow-indigo-900/20 hover:bg-indigo-500">Confirmar</button>
+               </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: APORTAR A CROWDFUNDING */}
+        {contributingCampaign && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-950/80 backdrop-blur-sm">
+            <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-6 relative overflow-hidden">
+               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-yellow-500"></div>
+               <h3 className="text-lg font-bold text-white mb-2">Aportar Electrones</h3>
+               <p className="text-slate-400 text-sm mb-6">
+                 Faltan <strong className="text-amber-400">{contributingCampaign.target_amount - contributingCampaign.current_amount}</strong> electrones para completar la meta. ¿Cuánto quieres aportar?
+               </p>
+               
+               <div className="mb-6 flex flex-col items-center">
+                 <input 
+                   type="number" 
+                   value={contributionAmount}
+                   onChange={(e) => {
+                     const val = Number(e.target.value);
+                     const maxAllowed = Math.min(myBalance, contributingCampaign.target_amount - contributingCampaign.current_amount);
+                     setContributionAmount(Math.max(1, Math.min(maxAllowed, val)));
+                   }}
+                   className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-center text-2xl font-mono text-amber-400 focus:outline-none focus:border-amber-500"
+                   min="1"
+                   max={Math.min(myBalance, contributingCampaign.target_amount - contributingCampaign.current_amount)}
+                 />
+                 <p className="text-xs text-slate-500 mt-2 font-mono">Saldo disponible: {myBalance}</p>
+               </div>
 
                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={() => setConfirmingProduct(null)}
-                    className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
-                  >
-                    <FaTimes /> Cancelar
-                  </button>
-                  
-                  <button 
-                    onClick={executePurchase}
-                    className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm bg-indigo-600 text-white hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-900/20"
-                  >
-                    <FaCheck /> Confirmar
-                  </button>
+                  <button onClick={() => setContributingCampaign(null)} className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">Cancelar</button>
+                  <button onClick={executeContribution} className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm bg-amber-600 text-white shadow-lg shadow-amber-900/20 hover:bg-amber-500">Aportar</button>
                </div>
             </div>
           </div>

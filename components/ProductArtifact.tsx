@@ -15,7 +15,7 @@ interface ProductArtifactProps {
 
 export default function ProductArtifact({ iconName, className = "w-16 h-16" }: ProductArtifactProps) {
   
-  // 1. LOOTBOX (Versión Definitiva: Rayo interior y brillos sutiles)
+  // 1. LOOTBOX (Versión Definitiva: Rayo interior y brillos sutiles - Sin el glitch blanco)
   if (iconName === 'FaBoxOpen') {
     return (
       <div className={`relative flex items-center justify-center shrink-0 group ${className}`}>
@@ -23,7 +23,7 @@ export default function ProductArtifact({ iconName, className = "w-16 h-16" }: P
         <div className="absolute inset-0 bg-gradient-to-br from-violet-600/40 via-fuchsia-500/30 to-yellow-400/20 rounded-2xl blur-lg animate-pulse"></div>
         
         {/* CONTENEDOR PRINCIPAL */}
-        <div className="relative bg-slate-900 border border-violet-500/40 w-full h-full rounded-xl flex items-center justify-center overflow-hidden shadow-inner shadow-violet-900/50 z-10">
+        <div className="relative bg-slate-900 border border-violet-500/40 w-full h-full rounded-xl flex items-center justify-center overflow-hidden shadow-[inset_0_0_15px_rgba(76,29,149,0.3)] z-10">
            
            {/* NÚCLEO DE LUZ */}
            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-violet-500/30 blur-md rounded-full"></div>
@@ -37,9 +37,6 @@ export default function ProductArtifact({ iconName, className = "w-16 h-16" }: P
            {/* CHISPAS */}
            <div className="absolute bottom-2 left-4 w-0.5 h-0.5 bg-yellow-100 rounded-full animate-rise-fade opacity-60"></div>
         </div>
-
-        {/* DETALLE EXTERIOR */}
-        <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-white/50 rounded-full blur-[1px] animate-ping-fast z-20"></div>
       </div>
     )
   }
