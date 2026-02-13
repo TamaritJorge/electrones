@@ -105,7 +105,8 @@ export default function FileCard({ file, onOpenEnunciado, onOpenSolution }: File
                  
                  <div className="relative w-5 h-5 flex items-center justify-center z-10">
                      <div className="transform scale-[0.25] origin-center opacity-80 group-hover/btn:opacity-100 transition-opacity">
-                          <ProductArtifact iconName="FaKey" className="w-20 h-20" />
+                          {/* CORRECCIÓN: Aquí cambiamos FaKey por FaPlug */}
+                          <ProductArtifact iconName="FaPlug" className="w-20 h-20" />
                      </div>
                  </div>
 

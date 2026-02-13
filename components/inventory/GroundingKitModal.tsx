@@ -118,7 +118,7 @@ export default function GroundingKitModal({
                             <FaCheckCircle className="text-6xl drop-shadow-[0_0_15px_rgba(74,222,128,0.5)]" />
                         </div>
                      ) : (
-                        <ProductArtifact iconName="FaKey" className="w-24 h-24 shadow-none border-none bg-transparent" />
+                        <ProductArtifact iconName="FaPlug" className="w-24 h-24 shadow-none border-none bg-transparent" />
                      )}
                 </div>
             </div>

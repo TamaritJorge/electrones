@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
 import { FaArrowLeft, FaBolt, FaStore, FaUsers } from 'react-icons/fa'
 import ProductCard from '@/components/shop/ProductCard'
+import Toast from '@/components/ui/Toast' // <-- Importamos tu Toast
 
 // Interfaces
 interface Product {
@@ -41,8 +42,11 @@ export default function ShopPage() {
   const [claimedCampaigns, setClaimedCampaigns] = useState<Set<string>>(new Set())
   const [purchasingId, setPurchasingId] = useState<string | null>(null)
   
-  // NUEVO: Estado para guardar la info del equipo del usuario
+  // Estado para guardar la info del equipo del usuario
   const [teamInfo, setTeamInfo] = useState<{ hex_color?: string, icon_key?: string } | null>(null)
+  
+  // NUEVO: Estado para tu Toast personalizado
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null)
   
   // Estados de modales
   const [confirmingProduct, setConfirmingProduct] = useState<Product | null>(null)
@@ -50,6 +54,11 @@ export default function ShopPage() {
   const [contributionAmount, setContributionAmount] = useState<number>(100)
 
   const supabase = createClient()
+
+  // NUEVO: Función para mostrar el Toast
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type })
+  }
 
   // 1. FUNCIÓN DE CARGA DE DATOS (Recarga suave)
   const loadShopData = async () => {
@@ -67,7 +76,7 @@ export default function ShopPage() {
     if (profile) {
       setMyBalance(profile.current_balance)
       
-      // NUEVO: Cargar info del equipo usando los nombres exactos de tus columnas
+      // Cargar info del equipo usando los nombres exactos de tus columnas
       if (profile.team) {
         const { data: teamData } = await supabase
           .from('teams')
@@ -151,13 +160,14 @@ export default function ShopPage() {
       const { data, error } = await supabase.rpc('buy_item', { p_product_id: product.id })
       if (error) throw error
       if (data.success) {
+        showToast(`¡Has comprado ${product.name}!`, 'success')
         await loadShopData()
       } else {
-        alert(data.message)
+        showToast(data.message, 'error')
       }
     } catch (err) {
       console.error(err)
-      alert('Error al procesar la compra.')
+      showToast('Error al procesar la compra.', 'error')
     } finally {
       setPurchasingId(null)
     }
@@ -169,12 +179,14 @@ export default function ShopPage() {
       const { data, error } = await supabase.rpc('create_crowdfunding_campaign', { target_product_id: productId })
       if (error) throw error
       if (data.success) {
+        showToast('¡Colecta iniciada! Avisa a tu equipo.', 'success')
         await loadShopData() 
       } else {
-        alert(data.message)
+        showToast(data.message, 'error')
       }
     } catch (err) {
       console.error(err)
+      showToast('Error al iniciar la colecta.', 'error')
     } finally {
       setPurchasingId(null)
     }
@@ -195,15 +207,14 @@ export default function ShopPage() {
       
       if (error) throw error
       if (data.success) {
-        if (data.campaign_completed) {
-          alert("¡CAMPAÑA COMPLETADA! ¡LO LOGRASTEIS!")
-        }
+        showToast(`¡Aportaste ${amount} electrones!`, 'success')
         await loadShopData()
       } else {
-        alert(data.message)
+        showToast(data.message, 'error')
       }
     } catch (err) {
       console.error(err)
+      showToast('Error al aportar electrones.', 'error')
     } finally {
       setPurchasingId(null)
     }
@@ -215,13 +226,14 @@ export default function ShopPage() {
       const { data, error } = await supabase.rpc('claim_campaign_reward', { p_campaign_id: campaignId })
       if (error) throw error
       if (data.success) {
+        showToast('¡Objeto reclamado! Revisa tu mochila.', 'success')
         await loadShopData()
       } else {
-        alert(data.message)
+        showToast(data.message, 'error')
       }
     } catch (err) {
       console.error(err)
-      alert('Error al reclamar el premio.')
+      showToast('Error al reclamar el premio.', 'error')
     } finally {
       setPurchasingId(null)
     }
@@ -233,7 +245,17 @@ export default function ShopPage() {
   )
 
   return (
-    <main className="min-h-screen bg-slate-900 px-4 py-6 pb-24">
+    <main className="min-h-screen bg-slate-900 px-4 py-6 pb-24 relative">
+      
+      {/* RENDERIZADO DEL TOAST */}
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
+
       <div className="max-w-md mx-auto space-y-6">
         
         {/* CABECERA */}
@@ -286,7 +308,7 @@ export default function ShopPage() {
                 activeCampaign={campaigns.find(c => c.product_id === product.id)}
                 hasClaimed={claimedCampaigns.has(campaigns.find(c => c.product_id === product.id)?.id || '')}
                 
-                // NUEVO: Pasamos los datos del equipo a la tarjeta
+                // Pasamos los datos del equipo a la tarjeta
                 teamColor={teamInfo?.hex_color}
                 teamIcon={teamInfo?.icon_key}
                 

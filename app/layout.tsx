@@ -1,8 +1,10 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav"; 
-import Header from "@/components/Header"; // <--- 1. IMPORTAR HEADER
+import Header from "@/components/Header";
+import { NotificationProvider } from "@/context/NotificationContext"; // <--- NUEVO: Importar el Provider
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,16 +31,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-900`}
       >
-        {/* 2. INSERTAR HEADER AQUÍ */}
-        <Header />
+        {/* ENVOLVEMOS TODA LA APP EN EL PROVIDER DE NOTIFICACIONES */}
+        <NotificationProvider>
+          
+          <Header />
 
-        {/* 3. AÑADIR pt-16 PARA QUE EL HEADER NO TAPE EL CONTENIDO */}
-        <div className="min-h-screen pb-20 pt-16">
-          {children}
-        </div>
+          <div className="min-h-screen pb-20 pt-16">
+            {children}
+          </div>
 
-        <BottomNav />
-        
+          <BottomNav />
+          
+        </NotificationProvider>
       </body>
     </html>
   );
