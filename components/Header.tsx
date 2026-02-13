@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { FaSignOutAlt, FaUserCircle, FaUserShield } from 'react-icons/fa'
 import { useState, useEffect } from 'react'
 import { formatTeam, TeamUI } from '@/utils/teams' // <--- Importamos utilidades de equipo
+import NotificationBell from '@/components/NotificationBell' // <--- NUEVO: Importamos la campanita
 
 export default function Header() {
   const router = useRouter()
@@ -135,7 +136,10 @@ export default function Header() {
         </div>
 
         {/* PARTE DERECHA: Botones de Acción */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          
+          {/* NUEVO: Campanita de notificaciones */}
+          <NotificationBell />
           
           {isAdmin && (
             <Link 
