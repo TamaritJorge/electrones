@@ -1,9 +1,10 @@
+// Ruta: components/leaderboard/TeamAssignment.tsx
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { formatTeam, TeamUI } from '@/utils/teams'
-// Asegúrate de tener: npm install canvas-confetti @types/canvas-confetti
+import { useRouter } from 'next/navigation'
 import confetti from 'canvas-confetti' 
 import { FaBolt, FaSpinner, FaAtom } from 'react-icons/fa'
 
@@ -15,17 +16,14 @@ export function TeamAssignment({ onAssignComplete }: TeamAssignmentProps) {
   const [status, setStatus] = useState<'idle' | 'resonating' | 'revealed'>('idle')
   const [assignedTeam, setAssignedTeam] = useState<TeamUI | null>(null)
   
-  // Estado para guardar los colores reales traídos de la DB
   const [dbColors, setDbColors] = useState<string[]>([])
-  
-  // Estado para el texto cambiante durante la carga
   const [loadingText, setLoadingText] = useState('Iniciando protocolos...')
 
   const supabase = createClient()
+  const router = useRouter()
   const resonanceIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const textIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // 1. CARGAR COLORES REALES AL MONTAR
   useEffect(() => {
     async function fetchColors() {
       const { data } = await supabase.from('teams').select('hex_color')
@@ -39,10 +37,8 @@ export function TeamAssignment({ onAssignComplete }: TeamAssignmentProps) {
   const startResonance = async () => {
     setStatus('resonating')
     
-    // Fallback por si la DB falla: colores por defecto
     const colorsToUse = dbColors.length > 0 ? dbColors : ['#FACC15', '#22D3EE', '#F97316', '#A3E635']
     
-    // --- ANIMACIÓN DE TEXTOS ---
     const steps = [
       "Sintonizando frecuencias...",
       "Calibrando espectro...",
@@ -58,9 +54,8 @@ export function TeamAssignment({ onAssignComplete }: TeamAssignmentProps) {
       if (stepIndex < steps.length) {
         setLoadingText(steps[stepIndex])
       }
-    }, 1000) // Cambia texto cada segundo
+    }, 1000)
 
-    // --- EFECTOS DE PARTÍCULAS ---
     resonanceIntervalRef.current = setInterval(() => {
       const randomColor = colorsToUse[Math.floor(Math.random() * colorsToUse.length)]
       try {
@@ -78,13 +73,11 @@ export function TeamAssignment({ onAssignComplete }: TeamAssignmentProps) {
           disableForReducedMotion: true
         })
       } catch (e) { /* Ignorar */ }
-    }, 400) // Lanza partículas cada 400ms
+    }, 400)
 
-    // --- ESPERA FORZADA DE 5 SEGUNDOS (Para dar drama) ---
     await new Promise(resolve => setTimeout(resolve, 5000))
 
     try {
-      // Llamada real al RPC
       const { data: teamId, error } = await supabase.rpc('assign_user_team')
       if (error) throw error
 
@@ -98,12 +91,19 @@ export function TeamAssignment({ onAssignComplete }: TeamAssignmentProps) {
         const formattedTeam = formatTeam(teamData)
         setAssignedTeam(formattedTeam)
         
-        // Limpiar intervalos
         if (resonanceIntervalRef.current) clearInterval(resonanceIntervalRef.current)
         if (textIntervalRef.current) clearInterval(textIntervalRef.current)
         
         setStatus('revealed')
         triggerFinalExplosion(formattedTeam.styles.text.color)
+
+        // NUEVO: Emitimos el evento para actualizar el Header instantáneamente
+        window.dispatchEvent(new CustomEvent('profile_updated', {
+          detail: { teamUI: formattedTeam }
+        }))
+
+        // Refresh para actualizar Server Components por detrás
+        router.refresh()
       }
 
     } catch (err) {
@@ -117,7 +117,6 @@ export function TeamAssignment({ onAssignComplete }: TeamAssignmentProps) {
 
   const triggerFinalExplosion = (colorHex: string) => {
     try {
-      // Explosión central
       confetti({
         particleCount: 200,
         spread: 100,
@@ -125,7 +124,6 @@ export function TeamAssignment({ onAssignComplete }: TeamAssignmentProps) {
         colors: [colorHex, '#ffffff'],
         zIndex: 60
       })
-      // Explosiones laterales para más fiesta
       setTimeout(() => {
         confetti({ particleCount: 50, angle: 60, spread: 55, origin: { x: 0 }, colors: [colorHex] });
         confetti({ particleCount: 50, angle: 120, spread: 55, origin: { x: 1 }, colors: [colorHex] });
@@ -133,24 +131,19 @@ export function TeamAssignment({ onAssignComplete }: TeamAssignmentProps) {
     } catch (e) { console.log('Confetti error') }
   }
 
-  // Helper para renderizar los orbes de fondo dinámicamente según los colores cargados
   const renderBackgroundOrbs = () => {
-    // Si no hay colores aun, no renderizamos nada o unos default
     const colors = dbColors.length > 0 ? dbColors : ['#FACC15', '#22D3EE', '#F97316']
     
     return (
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
-         {/* Orbe 1 */}
          <div 
             className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-[100px] animate-pulse -translate-x-1/2 -translate-y-1/2 mix-blend-screen duration-1000"
-            style={{ backgroundColor: `${colors[0]}40` }} // Añadimos transparencia al hex
+            style={{ backgroundColor: `${colors[0]}40` }} 
          ></div>
-         {/* Orbe 2 */}
          <div 
             className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-[100px] animate-pulse translate-x-1/2 translate-y-1/2 mix-blend-screen duration-700 animation-delay-500"
             style={{ backgroundColor: `${colors[1] || colors[0]}40` }}
          ></div>
-         {/* Orbe 3 */}
          <div 
             className="absolute top-1/2 left-1/2 w-64 h-64 rounded-full blur-[120px] animate-pulse -translate-x-1/2 -translate-y-1/2 mix-blend-screen duration-1500"
             style={{ backgroundColor: `${colors[2] || colors[0]}40` }}
@@ -163,7 +156,6 @@ export function TeamAssignment({ onAssignComplete }: TeamAssignmentProps) {
     <div className="w-full max-w-2xl mx-auto mt-8 relative">
       <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-3xl p-8 md:p-12 text-center shadow-2xl overflow-hidden relative min-h-[450px] flex flex-col items-center justify-center">
         
-        {/* ESTADO 1: IDLE */}
         {status === 'idle' && (
           <div className="animate-in fade-in zoom-in duration-500 space-y-6 relative z-10">
             <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mx-auto text-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.2)] animate-pulse group">
@@ -185,11 +177,9 @@ export function TeamAssignment({ onAssignComplete }: TeamAssignmentProps) {
           </div>
         )}
 
-        {/* ESTADO 2: RESONATING */}
         {status === 'resonating' && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/90 w-full h-full">
             
-            {/* Fondo dinámico con colores reales */}
             {renderBackgroundOrbs()}
 
             <div className="relative z-30 flex flex-col items-center space-y-8 p-4">
@@ -212,7 +202,6 @@ export function TeamAssignment({ onAssignComplete }: TeamAssignmentProps) {
           </div>
         )}
 
-        {/* ESTADO 3: REVEALED */}
         {status === 'revealed' && assignedTeam && (
           <div className="relative z-10 animate-in zoom-in spin-in-1 duration-700 ease-out w-full">
             <div 

@@ -171,7 +171,7 @@ export default function GroundingKitModal({
                                             <span className="animate-spin text-lg">⟳</span>
                                         ) : (
                                             <>
-                                                <FaBolt /> USAR ITEM
+                                                <FaBolt /> USAR
                                             </>
                                         )}
                                     </button>

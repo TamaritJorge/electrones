@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
 import { FaArrowLeft, FaBolt, FaStore, FaUsers } from 'react-icons/fa'
 import ProductCard from '@/components/shop/ProductCard'
-import Toast from '@/components/ui/Toast' // <-- Importamos tu Toast
+import Toast from '@/components/ui/Toast'
 
 // Interfaces
 interface Product {
@@ -45,7 +45,10 @@ export default function ShopPage() {
   // Estado para guardar la info del equipo del usuario
   const [teamInfo, setTeamInfo] = useState<{ hex_color?: string, icon_key?: string } | null>(null)
   
-  // NUEVO: Estado para tu Toast personalizado
+  // NUEVO: Estado explícito para saber si tiene equipo (para pasar al ProductCard)
+  const [userHasTeam, setUserHasTeam] = useState<boolean>(true) // Por defecto true hasta que cargue
+  
+  // Estado para tu Toast personalizado
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null)
   
   // Estados de modales
@@ -55,7 +58,7 @@ export default function ShopPage() {
 
   const supabase = createClient()
 
-  // NUEVO: Función para mostrar el Toast
+  // Función para mostrar el Toast
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type })
   }
@@ -76,6 +79,9 @@ export default function ShopPage() {
     if (profile) {
       setMyBalance(profile.current_balance)
       
+      // Actualizamos si tiene equipo o no
+      setUserHasTeam(!!profile.team)
+      
       // Cargar info del equipo usando los nombres exactos de tus columnas
       if (profile.team) {
         const { data: teamData } = await supabase
@@ -87,6 +93,9 @@ export default function ShopPage() {
         if (teamData) {
           setTeamInfo(teamData)
         }
+      } else {
+        // Si no tiene equipo, reseteamos la info
+        setTeamInfo(null)
       }
     }
 
@@ -308,6 +317,10 @@ export default function ShopPage() {
                 activeCampaign={campaigns.find(c => c.product_id === product.id)}
                 hasClaimed={claimedCampaigns.has(campaigns.find(c => c.product_id === product.id)?.id || '')}
                 
+                // Nuevas props pasadas:
+                userHasTeam={userHasTeam}
+                onTeamAssigned={loadShopData}
+
                 // Pasamos los datos del equipo a la tarjeta
                 teamColor={teamInfo?.hex_color}
                 teamIcon={teamInfo?.icon_key}

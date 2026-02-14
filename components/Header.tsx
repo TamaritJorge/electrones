@@ -6,8 +6,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { FaSignOutAlt, FaUserCircle, FaUserShield } from 'react-icons/fa'
 import { useState, useEffect } from 'react'
-import { formatTeam, TeamUI } from '@/utils/teams' // <--- Importamos utilidades de equipo
-import NotificationBell from '@/components/NotificationBell' // <--- NUEVO: Importamos la campanita
+import { formatTeam, TeamUI } from '@/utils/teams' 
+import NotificationBell from '@/components/NotificationBell'
 
 export default function Header() {
   const router = useRouter()
@@ -16,8 +16,8 @@ export default function Header() {
   // 1. TODOS LOS HOOKS SIEMPRE PRIMERO
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [nickname, setNickname] = useState<string>('Estudiante') // <--- Estado para nickname
-  const [team, setTeam] = useState<TeamUI | null>(null) // <--- Estado para el equipo visual
+  const [nickname, setNickname] = useState<string>('Estudiante')
+  const [team, setTeam] = useState<TeamUI | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
 
   // Efecto para cargar datos
@@ -30,7 +30,7 @@ export default function Header() {
         // 1. Obtenemos perfil con campos de equipo y nickname
         const { data: profile } = await supabase
           .from('profiles')
-          .select('avatar_url, role, nickname, team, team_id') // <--- Pedimos nickname y team
+          .select('avatar_url, role, nickname, team, team_id')
           .eq('id', user.id)
           .single()
         
@@ -49,7 +49,6 @@ export default function Header() {
                 .single()
              
              if (teamRaw) {
-                // Como estamos en Client Component, podemos formatear aquí directamente
                 setTeam(formatTeam(teamRaw)) 
              }
           }
@@ -59,10 +58,11 @@ export default function Header() {
 
     fetchProfile()
 
-    // Escuchar cambios en el perfil (desde BalanceCard)
+    // Escuchar cambios en el perfil (desde BalanceCard o TeamAssignment)
     const handleProfileUpdate = (event: any) => {
       if (event.detail?.avatar_url) setAvatarUrl(event.detail.avatar_url)
-      // Si decidieras emitir el nickname en el evento, podrías actualizarlo aquí también
+      // NUEVO: Cazamos el equipo cuando se emite el evento
+      if (event.detail?.teamUI) setTeam(event.detail.teamUI)
     }
 
     window.addEventListener('profile_updated', handleProfileUpdate)
@@ -96,9 +96,8 @@ export default function Header() {
                 alt="Perfil" 
                 className="w-10 h-10 rounded-full object-cover transition-all duration-300"
                 style={{ 
-                    // Borde dinámico según el equipo
                     borderWidth: '2px',
-                    borderColor: team ? team.styles.text.color : '#334155', // Slate-700 si no hay equipo
+                    borderColor: team ? team.styles.text.color : '#334155',
                     boxShadow: team ? `0 0 10px -2px ${team.styles.text.color}` : 'none'
                 }}
               />
@@ -138,7 +137,6 @@ export default function Header() {
         {/* PARTE DERECHA: Botones de Acción */}
         <div className="flex items-center gap-1">
           
-          {/* NUEVO: Campanita de notificaciones */}
           <NotificationBell />
           
           {isAdmin && (

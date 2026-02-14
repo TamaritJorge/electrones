@@ -62,24 +62,23 @@ export default function LootRatesModal({ onClose, iconName }: Props) {
             name: tier.name,
             percent: (tier.probability / totalWeight) * 100,
             hex_color: color,
-            // Si hay rango lo ponemos, si no (antes era "Aleatorio") lo dejamos null
             subtitle: tier.min_value && tier.max_value 
               ? `Valor: ${tier.min_value}-${tier.max_value}` 
               : null 
           }
         })
 
-        // 3. Crear el item de BONUS (10% fijo)
+        // 3. Crear el item de BONUS (10% fijo) con color Ámbar
         const bonusItem: DisplayItem = {
           id: 'extra-box-bonus',
           name: 'Caja Extra',
           percent: 10.00,
-          hex_color: '#d946ef', // Un color Fucsia neón para destacar
+          hex_color: '#f59e0b', // Ámbar vibrante
           subtitle: 'Probabilidad independiente',
           isBonus: true
         }
 
-        // 4. Juntar y Ordenar por porcentaje descendente
+        // 4. Juntar TODO y ordenar por probabilidad (así caerá donde le toque)
         const allItems = [...realItems, bonusItem].sort((a, b) => b.percent - a.percent)
 
         setItems(allItems)
@@ -142,13 +141,12 @@ export default function LootRatesModal({ onClose, iconName }: Props) {
                     return (
                         <div 
                             key={item.id}
-                            className={`
-                              group relative overflow-hidden rounded-xl border p-3 flex items-center justify-between transition-all hover:brightness-110
-                              ${item.isBonus ? 'shadow-[0_0_15px_-5px_rgba(217,70,239,0.3)]' : ''} 
-                            `}
+                            className="group relative overflow-hidden rounded-xl border p-3 flex items-center justify-between transition-all hover:brightness-110"
                             style={{ 
                                 backgroundColor: `${item.hex_color}10`,
-                                borderColor: `${item.hex_color}30`
+                                borderColor: `${item.hex_color}30`,
+                                // Si es bonus, inyectamos la sombra usando su propio hex_color
+                                boxShadow: item.isBonus ? `0 0 15px -5px ${item.hex_color}60` : 'none'
                             }}
                         >
                             {/* Barra lateral */}
@@ -163,13 +161,18 @@ export default function LootRatesModal({ onClose, iconName }: Props) {
                                     style={{ color: item.hex_color }}
                                 >
                                     {item.name}
-                                    {/* Etiqueta BONUS si es la caja extra */}
+                                    {/* Etiqueta BONUS con color de fondo dinámico */}
                                     {item.isBonus && (
-                                      <span className="text-[9px] bg-fuchsia-500 text-white px-1.5 py-0.5 rounded ml-1 tracking-normal">BONUS</span>
+                                      <span 
+                                        className="text-[9px] text-slate-950 font-black px-1.5 py-0.5 rounded ml-1 tracking-normal"
+                                        style={{ backgroundColor: item.hex_color }}
+                                      >
+                                        BONUS
+                                      </span>
                                     )}
                                 </h4>
                                 
-                                {/* Subtítulo: Solo se renderiza si existe (ya quitamos el "Aleatorio") */}
+                                {/* Subtítulo */}
                                 {item.subtitle && (
                                   <p className="text-slate-400 text-[11px] font-mono mt-0.5 opacity-80">
                                       {item.subtitle}
