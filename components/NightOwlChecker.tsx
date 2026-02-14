@@ -12,7 +12,7 @@ export default function NightOwlChecker() {
       const hour = new Date().getHours()
       
       // 2. Solo si estamos entre las 3 y las 5 AM intentamos la llamada
-      if (hour >= 3 && hour < 15) {
+      if (hour >= 3 && hour < 6) {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           // Llamamos a la función de la DB que ya tiene la lógica de seguridad
