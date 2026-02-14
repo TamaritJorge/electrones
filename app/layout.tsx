@@ -4,7 +4,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav"; 
 import Header from "@/components/Header";
-import { NotificationProvider } from "@/context/NotificationContext"; // <--- NUEVO: Importar el Provider
+import { NotificationProvider } from "@/context/NotificationContext";
+import NightOwlChecker from "@/components/NightOwlChecker"; // <--- Importamos el vigilante
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,8 +32,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-900`}
       >
-        {/* ENVOLVEMOS TODA LA APP EN EL PROVIDER DE NOTIFICACIONES */}
         <NotificationProvider>
+          {/* El vigilante de logros nocturnos se queda aquí, invisible */}
+          <NightOwlChecker /> 
           
           <Header />
 
