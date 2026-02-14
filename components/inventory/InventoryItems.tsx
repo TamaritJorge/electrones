@@ -103,6 +103,17 @@ export default function InventoryItems({ onSwitchToFiles }: InventoryItemsProps)
     return category !== 'permanente' && category !== 'lootbox'
   }
 
+  // Función helper para saber si es una caja de loot real y no la puesta a tierra
+  const checkIsMysteryBox = (item: StackedItem) => {
+      const isLoot = item.category === 'lootbox' || 
+                     item.name.toLowerCase().includes('caja') || 
+                     item.image_icon.includes('loot');
+                     
+      const isNotPuestaATierra = !item.name.toLowerCase().includes('puesta a tierra');
+      
+      return isLoot && isNotPuestaATierra;
+  }
+
   if (loading) {
       return <div className="text-center py-20 text-slate-600 font-mono animate-pulse">CARGANDO MOCHILA...</div>
   }
@@ -122,10 +133,8 @@ export default function InventoryItems({ onSwitchToFiles }: InventoryItemsProps)
     <>
         <div className="grid grid-cols-2 gap-4">
             {inventory.map((item) => {
-                // Lógica para saber si mostrar el botón de loot
-                const isMysteryBox = item.category === 'lootbox' || 
-                                     item.name.toLowerCase().includes('caja') || 
-                                     item.image_icon.includes('loot');
+                // Usamos la función helper para estar seguros
+                const isMysteryBox = checkIsMysteryBox(item);
 
                 return (
                     <div key={item.product_id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col items-center relative group overflow-hidden shadow-lg transition-colors hover:border-slate-700">
@@ -189,8 +198,8 @@ export default function InventoryItems({ onSwitchToFiles }: InventoryItemsProps)
                
                <div className="flex items-center justify-center gap-2 mb-1">
                     <h2 className="text-xl font-bold text-white">{selectedItem.name}</h2>
-                    {/* También lo añadimos en el título del modal si es caja */}
-                    {(selectedItem.category === 'lootbox' || selectedItem.name.toLowerCase().includes('caja')) && (
+                    {/* Usamos la misma lógica blindada aquí en el modal */}
+                    {checkIsMysteryBox(selectedItem) && (
                          <LootRatesButton 
                             minimal={true}
                             iconName={selectedItem.image_icon}
