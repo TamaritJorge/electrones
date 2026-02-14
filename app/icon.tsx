@@ -1,3 +1,4 @@
+//ruta: app/icon.tsx
 import { ImageResponse } from 'next/og'
 
 // Configuración de la imagen (Metadatos)
