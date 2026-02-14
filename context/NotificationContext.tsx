@@ -29,7 +29,7 @@ interface NotificationContextType {
 // 1. Creamos el contexto
 export const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
 
-// 2. EXPORTAMOS EL PROVIDER (Este es el que te pedía el Layout)
+// 2. EXPORTAMOS EL PROVIDER
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -70,11 +70,25 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     await supabase.from('notifications').delete().eq('user_id', user.id)
   }
 
+  // --- EL EFFECT ACTUALIZADO CON POLLING Y FOCUS ---
   useEffect(() => {
+    // Carga inicial
     fetchNotifications()
+    
+    // Refrescar al volver a la pestaña
     const handleFocus = () => fetchNotifications()
     window.addEventListener('focus', handleFocus)
-    return () => window.removeEventListener('focus', handleFocus)
+
+    // Sondeo silencioso cada 15 segundos
+    const intervalId = setInterval(() => {
+      fetchNotifications()
+    }, 15000)
+
+    // Limpieza al desmontar
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      clearInterval(intervalId)
+    }
   }, [])
 
   return (
