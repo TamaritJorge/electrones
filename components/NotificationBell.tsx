@@ -3,7 +3,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { FaBell, FaTrophy, FaRocket, FaInfoCircle, FaTimes, FaShoppingCart, FaTrashAlt } from 'react-icons/fa'
-// OJO AQUÍ: separamos el hook (código) del tipo (TypeScript)
 import { useNotifications } from '@/context/NotificationContext'
 import type { NotificationType } from '@/context/NotificationContext'
 
@@ -50,12 +49,12 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {/* PANEL DESPLEGABLE */}
+      {/* PANEL DESPLEGABLE CON LAS CLASES MÁGICAS PARA MÓVIL */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-80 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 mt-3 w-80 max-w-[calc(100vw-2rem)] origin-top-right bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200 flex flex-col">
           
           {/* Cabecera del Panel */}
-          <div className="flex items-center justify-between px-4 py-3 bg-slate-800/50 border-b border-slate-700">
+          <div className="flex items-center justify-between px-4 py-3 bg-slate-800/50 border-b border-slate-700 shrink-0">
             <span className="font-bold text-slate-200 text-sm">Notificaciones</span>
             {notifications.length > 0 && (
               <button 
@@ -97,7 +96,7 @@ export default function NotificationBell() {
                     <h4 className={`text-sm font-semibold truncate ${!notif.is_read ? 'text-slate-200' : 'text-slate-400'}`}>
                       {notif.title}
                     </h4>
-                    <p className="text-xs text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
+                    <p className="text-xs text-slate-500 line-clamp-2 mt-0.5 leading-relaxed break-words">
                       {notif.message}
                     </p>
                   </div>
@@ -108,7 +107,7 @@ export default function NotificationBell() {
                       e.stopPropagation();
                       deleteNotification(notif.id);
                     }}
-                    className="shrink-0 p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"
+                    className="shrink-0 p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded-md opacity-0 md:group-hover:opacity-100 transition-all"
                   >
                     <FaTimes size={12} />
                   </button>
