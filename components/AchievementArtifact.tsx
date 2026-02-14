@@ -10,7 +10,9 @@ import {
   FaInfinity, 
   FaMoon, 
   FaHandshake,
-  FaTrophy
+  FaTrophy,
+  FaCoins,
+  FaCheckCircle
 } from 'react-icons/fa'
 
 interface AchievementArtifactProps {
@@ -18,7 +20,6 @@ interface AchievementArtifactProps {
   className?: string
 }
 
-// Sacamos la plantilla fuera de la función principal (buena práctica)
 const BadgeBase = ({ 
   children, colorClass, glowClass, className 
 }: { 
@@ -27,44 +28,34 @@ const BadgeBase = ({
   <div className={`relative flex items-center justify-center shrink-0 rounded-full border-2 ${colorClass} ${className} overflow-hidden shadow-lg group`}>
     <div className={`absolute inset-0 opacity-20 ${glowClass} blur-md`}></div>
     <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/20 to-transparent z-0"></div>
-    {/* Contenedor z-10 para asegurar que el icono quede por encima del brillo blanco */}
     <div className="relative z-10 flex items-center justify-center w-full h-full">
       {children}
     </div>
   </div>
 )
 
-// Exportación default obligatoria
 export default function AchievementArtifact({ iconName, className = "w-16 h-16" }: AchievementArtifactProps) {
   
   switch (iconName) {
-    // --- ASISTENCIA A CLASES (PROGRESIÓN: Bronce -> Plata -> Oro -> Diamante) ---
-    
-    // 1. Bronce
+    // --- ASISTENCIA A CLASES ---
     case 'achv_class_1':
       return (
         <BadgeBase colorClass="border-amber-700 bg-amber-900/50" glowClass="bg-amber-600" className={className}>
           <FaBolt className="text-amber-600 drop-shadow-[0_0_5px_rgba(180,83,9,0.8)] w-1/2 h-1/2" />
         </BadgeBase>
       )
-    
-    // 2. Plata
     case 'achv_class_5':
       return (
         <BadgeBase colorClass="border-slate-300 bg-slate-700/60" glowClass="bg-slate-300" className={className}>
           <FaBolt className="text-slate-200 drop-shadow-[0_0_8px_rgba(226,232,240,0.8)] w-1/2 h-1/2" />
         </BadgeBase>
       )
-    
-    // 3. Oro
     case 'achv_class_10':
       return (
         <BadgeBase colorClass="border-yellow-400 bg-yellow-900/40" glowClass="bg-yellow-400" className={className}>
           <FaBolt className="text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,1)] w-1/2 h-1/2 animate-pulse" />
         </BadgeBase>
       )
-    
-    // 4. Diamante (Cian / Azul brillante)
     case 'achv_class_20':
       return (
         <BadgeBase colorClass="border-cyan-300 bg-cyan-900/50" glowClass="bg-cyan-400" className={className}>
@@ -73,27 +64,41 @@ export default function AchievementArtifact({ iconName, className = "w-16 h-16" 
         </BadgeBase>
       )
 
-    // --- CROWDFUNDING Y EQUIPO ---
-    case 'achv_crowd_global':
+    // --- CROWDFUNDING EQUIPO ---
+    case 'achv_crowd_team_contribute':
+      return (
+        <BadgeBase colorClass="border-emerald-500 bg-emerald-950" glowClass="bg-emerald-500" className={className}>
+          <FaCoins className="text-emerald-400 w-1/2 h-1/2 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+        </BadgeBase>
+      )
+    case 'achv_crowd_team_finish':
+      return (
+        <BadgeBase colorClass="border-emerald-400 bg-emerald-900" glowClass="bg-emerald-300" className={className}>
+          <FaCheckCircle className="text-emerald-300 w-1/2 h-1/2 drop-shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
+        </BadgeBase>
+      )
+
+    // --- CROWDFUNDING GLOBAL ---
+    case 'achv_crowd_global_contribute':
       return (
         <BadgeBase colorClass="border-blue-500 bg-blue-950" glowClass="bg-blue-500" className={className}>
           <FaGlobe className="text-blue-400 w-1/2 h-1/2 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
         </BadgeBase>
       )
-    case 'achv_crowd_team':
+    case 'achv_crowd_global_finish':
       return (
-        <BadgeBase colorClass="border-emerald-500 bg-emerald-950" glowClass="bg-emerald-500" className={className}>
-          <FaUsers className="text-emerald-400 w-1/2 h-1/2 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+        <BadgeBase colorClass="border-blue-400 bg-blue-900" glowClass="bg-blue-300" className={className}>
+          <FaStar className="text-blue-200 w-1/2 h-1/2 drop-shadow-[0_0_12px_rgba(147,197,253,1)] animate-pulse" />
         </BadgeBase>
       )
+
+    // --- EQUIPO Y SISTEMA ---
     case 'achv_team_join':
       return (
         <BadgeBase colorClass="border-pink-500 bg-pink-950" glowClass="bg-pink-500" className={className}>
           <FaHandshake className="text-pink-400 w-1/2 h-1/2 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" />
         </BadgeBase>
       )
-
-    // --- HITOS DE SISTEMA ---
     case 'achv_first_box':
       return (
         <BadgeBase colorClass="border-violet-500 bg-violet-950" glowClass="bg-violet-500" className={className}>
@@ -118,8 +123,6 @@ export default function AchievementArtifact({ iconName, className = "w-16 h-16" 
           <FaMoon className="text-slate-200 w-1/2 h-1/2 drop-shadow-[0_0_8px_rgba(241,245,249,0.8)]" />
         </BadgeBase>
       )
-
-    // --- EASTER EGGS / TRAMPAS ---
     case 'achv_hacker_fail':
       return (
         <BadgeBase colorClass="border-red-600 bg-red-950" glowClass="bg-red-600" className={className}>
@@ -127,7 +130,6 @@ export default function AchievementArtifact({ iconName, className = "w-16 h-16" 
         </BadgeBase>
       )
 
-    // --- POR DEFECTO ---
     default:
       return (
         <BadgeBase colorClass="border-slate-600 bg-slate-800" glowClass="bg-slate-500" className={className}>

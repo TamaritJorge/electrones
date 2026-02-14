@@ -5,7 +5,8 @@ import "./globals.css";
 import BottomNav from "@/components/BottomNav"; 
 import Header from "@/components/Header";
 import { NotificationProvider } from "@/context/NotificationContext";
-import NightOwlChecker from "@/components/NightOwlChecker"; // <--- Importamos el vigilante
+import NightOwlChecker from "@/components/NightOwlChecker";
+import RouteTracker from "@/components/RouteTracker"; // <--- Importamos el rastreador de métricas
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +34,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-900`}
       >
         <NotificationProvider>
-          {/* El vigilante de logros nocturnos se queda aquí, invisible */}
+          {/* Rastreador de visitas para el Heatmap */}
+          <RouteTracker /> 
+          
+          {/* El vigilante de logros nocturnos */}
           <NightOwlChecker /> 
           
           <Header />
