@@ -1,3 +1,4 @@
+//ruta: components/leaderboard/TeamLeaderboardCard.tsx
 import { FaBolt, FaUsers, FaTrophy, FaMedal } from 'react-icons/fa'
 import { formatTeam } from '@/utils/teams'
 
@@ -26,9 +27,9 @@ export default function TeamLeaderboardCard({ entry, rank }: CardProps) {
     switch (position) {
       case 1:
         return {
-          rankIcon: <FaTrophy className="text-yellow-400 text-3xl drop-shadow-md" />, // Icono más grande
+          rankIcon: <FaTrophy className="text-yellow-400 text-2xl sm:text-3xl drop-shadow-md" />,
           border: 'border-yellow-500/50',
-          bg: 'bg-gradient-to-r from-yellow-500/20 to-slate-900/80', // Fondo un poco más evidente
+          bg: 'bg-gradient-to-r from-yellow-500/20 to-slate-900/80',
         }
       case 2:
         return {
@@ -55,8 +56,7 @@ export default function TeamLeaderboardCard({ entry, rank }: CardProps) {
 
   return (
     <div 
-      // CONDICIONAL: Si es primero (isFirst), usamos p-6 (más alto), si no p-4
-      className={`relative w-full flex items-center justify-between rounded-xl border ${rankStyle.border} ${rankStyle.bg} transition-all duration-300 hover:scale-[1.01] ${isFirst ? 'p-6 sm:p-8' : 'p-4'}`}
+      className={`relative w-full flex items-center justify-between gap-2 rounded-xl border ${rankStyle.border} ${rankStyle.bg} transition-all duration-300 hover:scale-[1.01] ${isFirst ? 'p-4 sm:p-6 lg:p-8' : 'p-3 sm:p-4'}`}
       style={{
         boxShadow: `inset 0 0 20px ${entry.hex_color}05`
       }}
@@ -67,52 +67,56 @@ export default function TeamLeaderboardCard({ entry, rank }: CardProps) {
         style={{ backgroundColor: entry.hex_color, boxShadow: `0 0 15px ${entry.hex_color}80` }}
       />
 
-      {/* SECCIÓN IZQUIERDA */}
-      <div className="flex items-center gap-5 pl-4">
+      {/* SECCIÓN IZQUIERDA (Añadido flex-1 y min-w-0 para evitar desbordamiento) */}
+      <div className="flex items-center gap-3 sm:gap-5 pl-3 sm:pl-4 flex-1 min-w-0">
         
         {/* Ranking */}
-        <div className="w-8 flex justify-center items-center">
+        <div className="w-6 sm:w-8 flex justify-center items-center shrink-0">
           {rankStyle.rankIcon}
         </div>
 
-        <div className="flex items-center gap-4">
-            {/* Icono de Facción: Más grande si es primero */}
+        {/* Contenedor del Icono + Nombre (Añadido flex-1 min-w-0) */}
+        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+            {/* Icono de Facción: Reducido un poco en móvil para dar espacio al texto */}
             <div 
-                className={`rounded-full flex items-center justify-center border bg-slate-950/50 backdrop-blur-sm transition-all ${isFirst ? 'w-16 h-16' : 'w-10 h-10'}`}
+                className={`shrink-0 rounded-full flex items-center justify-center border bg-slate-950/50 backdrop-blur-sm transition-all ${isFirst ? 'w-12 h-12 sm:w-16 sm:h-16' : 'w-8 h-8 sm:w-10 sm:h-10'}`}
                 style={{ 
                     borderColor: entry.hex_color,
                     boxShadow: `0 0 ${isFirst ? '20px' : '10px'} ${entry.hex_color}40`
                 }}
             >
                 <FactionIcon 
-                  className={`transition-all ${isFirst ? 'text-3xl' : 'text-lg'}`} 
+                  className={`transition-all ${isFirst ? 'text-2xl sm:text-3xl' : 'text-base sm:text-lg'}`} 
                   style={{ color: entry.hex_color }} 
                 />
             </div>
 
-            {/* Nombre: Más grande si es primero */}
+            {/* Nombre: Añadido truncate para cortarlo si es muy largo */}
             <h4 
-              className={`font-black tracking-tight drop-shadow-sm ${isFirst ? 'text-3xl' : 'text-xl'}`}
+              className={`font-black tracking-tight drop-shadow-sm truncate ${isFirst ? 'text-xl sm:text-3xl' : 'text-lg sm:text-xl'}`}
               style={{ color: entry.hex_color }}
+              title={entry.name} // Muestra el nombre completo al pasar el ratón si se trunca
             >
                 {entry.name}
             </h4>
         </div>
       </div>
 
-      {/* SECCIÓN DERECHA */}
-      <div className="flex items-center gap-6 sm:gap-8 pr-2">
+      {/* SECCIÓN DERECHA (Añadido shrink-0) */}
+      <div className="flex items-center gap-4 sm:gap-6 lg:gap-8 pr-1 sm:pr-2 shrink-0">
         
-        <div className="hidden sm:flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+        {/* Contador de miembros: Se oculta en pantallas pequeñas para ganar espacio */}
+        <div className="hidden md:flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity" title={`${entry.member_count} miembros`}>
           <span className="text-slate-300 font-mono text-sm font-bold">{entry.member_count}</span>
           <FaUsers className="text-slate-400 text-xs" />
         </div>
 
-        <div className="flex items-center gap-2 min-w-[80px] justify-end">
-          <span className={`text-white font-mono font-bold drop-shadow-md ${isFirst ? 'text-3xl' : 'text-xl'}`}>
+        {/* Puntos: Reducidos ligeramente en móvil si es isFirst */}
+        <div className="flex items-center gap-1.5 sm:gap-2 justify-end">
+          <span className={`text-white font-mono font-bold drop-shadow-md ${isFirst ? 'text-xl sm:text-3xl' : 'text-lg sm:text-xl'}`}>
             {entry.total_score.toLocaleString()}
           </span>
-          <FaBolt className={`text-yellow-400 animate-pulse ${isFirst ? 'text-xl' : 'text-sm'}`} />
+          <FaBolt className={`text-yellow-400 animate-pulse shrink-0 ${isFirst ? 'text-lg sm:text-xl' : 'text-sm'}`} />
         </div>
 
       </div>

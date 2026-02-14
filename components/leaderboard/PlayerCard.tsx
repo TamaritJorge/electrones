@@ -9,7 +9,7 @@ interface PlayerCardProps {
   score: number
   isCurrentUser?: boolean
   leagueColor?: string
-  team?: { id: string } | null // <--- IMPORTANTE: Recibimos el equipo
+  team?: { id: string } | null 
 }
 
 export default function PlayerCard({ 
@@ -22,16 +22,13 @@ export default function PlayerCard({
   team 
 }: PlayerCardProps) {
   
-  // 1. OBTENER ESTILOS DEL EQUIPO (Colores e Iconos)
   const teamVisuals = team ? formatTeam(team) : null
 
-  // Lógica de podio
   const isTop1 = rank === 1
   const isTop2 = rank === 2
   const isTop3 = rank === 3
   const isPodium = rank <= 3
 
-  // Estilos de podio
   let podiumBorder = ''
   let podiumText = ''
   let podiumIconColor = ''
@@ -50,7 +47,6 @@ export default function PlayerCard({
     podiumIconColor = 'text-amber-600'
   }
 
-  // Estilo base
   const normalStyle = isCurrentUser 
     ? 'bg-indigo-600/20 border-indigo-500 shadow-indigo-500/20 shadow-lg translate-x-2' 
     : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800 hover:border-slate-600'
@@ -58,12 +54,16 @@ export default function PlayerCard({
   return (
     <div 
       className={`
-        flex items-center justify-between rounded-xl border transition-all duration-300
+        flex items-center justify-between rounded-xl border transition-all duration-300 gap-2
         ${isPodium ? `p-4 my-2 shadow-xl ${podiumBorder}` : `p-3 ${normalStyle}`}
         ${isPodium && !isCurrentUser ? 'scale-[1.02]' : ''} 
       `}
     >
-      <div className="flex items-center gap-4">
+      {/* AQUÍ ESTÁ LA MAGIA: 
+        Añadimos flex-1 y min-w-0 al contenedor izquierdo para que 
+        permita encoger el texto del nombre en lugar de empujar la puntuación 
+      */}
+      <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
         
         {/* RANGO */}
         <div className={`
@@ -78,7 +78,7 @@ export default function PlayerCard({
           )}
         </div>
 
-        {/* AVATAR + BORDE DE EQUIPO */}
+        {/* AVATAR */}
         <div className="relative shrink-0">
           {avatarUrl ? (
             <img 
@@ -90,7 +90,6 @@ export default function PlayerCard({
               `}
               style={{
                 borderWidth: '2px',
-                // 👇 USA EL COLOR DEL EQUIPO SI EXISTE
                 borderColor: teamVisuals ? teamVisuals.styles.text.color : (isCurrentUser ? '#818cf8' : '#475569'),
                 boxShadow: teamVisuals ? `0 0 10px -3px ${teamVisuals.styles.text.color}` : 'none'
               }}
@@ -115,17 +114,20 @@ export default function PlayerCard({
         </div>
 
         {/* NOMBRE + ICONO EQUIPO */}
-        <div className="flex flex-col min-w-0">
+        {/* Añadimos flex-1 para que ocupe el espacio restante y empuje el truncate */}
+        <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
+            {/* Quitamos los max-w fijos. Ahora truncate funciona perfectamente 
+              sin importar el tamaño de pantalla 
+            */}
             <span className={`
-              font-bold truncate max-w-[100px] sm:max-w-[180px]
+              font-bold truncate
               ${isPodium ? 'text-base text-white' : 'text-sm'}
               ${isCurrentUser ? 'text-white' : 'text-slate-200'}
             `}>
               {nickname}
             </span>
             
-            {/* 👇 ICONO DEL EQUIPO */}
             {teamVisuals && (
               <div 
                 className="shrink-0 opacity-90" 
@@ -138,7 +140,7 @@ export default function PlayerCard({
           </div>
 
           {isCurrentUser && (
-            <span className="text-[10px] text-indigo-300 font-normal leading-none -mt-0.5">
+            <span className="text-[10px] text-indigo-300 font-normal leading-none mt-0.5">
               (Tú)
             </span>
           )}
@@ -146,13 +148,14 @@ export default function PlayerCard({
       </div>
 
       {/* SCORE */}
+      {/* Añadido text-right al contenedor por si la puntuación es altísima */}
       <div className={`
-        font-mono font-bold flex items-center gap-2 shrink-0 ml-2
+        font-mono font-bold flex items-center justify-end gap-1.5 shrink-0 ml-2
         ${isPodium ? 'text-white text-lg' : 'text-sm'}
         ${isCurrentUser ? 'text-indigo-200' : 'text-slate-400'}
       `}>
-        {score.toLocaleString()} 
-        <FaBolt className={`text-xs ${leagueColor}`} />
+        <span>{score.toLocaleString()}</span>
+        <FaBolt className={`text-xs ${leagueColor} shrink-0`} />
       </div>
     </div>
   )
