@@ -12,7 +12,8 @@ import {
   FaHandshake,
   FaTrophy,
   FaCoins,
-  FaCheckCircle
+  FaCheckCircle,
+  FaWifi // <-- Añadido el icono de Wifi para la interferencia
 } from 'react-icons/fa'
 
 interface AchievementArtifactProps {
@@ -127,6 +128,14 @@ export default function AchievementArtifact({ iconName, className = "w-16 h-16" 
       return (
         <BadgeBase colorClass="border-red-600 bg-red-950" glowClass="bg-red-600" className={className}>
           <FaSkull className="text-red-500 w-1/2 h-1/2 drop-shadow-[0_0_10px_rgba(239,68,68,1)] animate-bounce" />
+        </BadgeBase>
+      )
+      
+    // 👇 --- NUEVO LOGRO: INTERFERENCIA --- 👇
+    case 'achv_interference':
+      return (
+        <BadgeBase colorClass="border-fuchsia-600 bg-fuchsia-950/80" glowClass="bg-fuchsia-600" className={className}>
+          <FaWifi className="text-fuchsia-400 w-1/2 h-1/2 drop-shadow-[0_0_10px_rgba(217,70,239,0.9)] animate-pulse" />
         </BadgeBase>
       )
 

@@ -40,12 +40,12 @@ interface ProductCardProps {
   hasClaimed?: boolean
   teamColor?: string 
   teamIcon?: string  
-  userHasTeam?: boolean // Prop nueva para saber si bloquear o no
+  userHasTeam?: boolean
   onBuy: (product: Product) => void
   onStartCampaign: (productId: string) => void
   onContribute: (campaign: Campaign) => void
   onClaim: (campaignId: string) => void
-  onTeamAssigned?: () => void // Prop nueva para avisar al padre de que recargue datos
+  onTeamAssigned?: () => void
 }
 
 export default function ProductCard({
@@ -57,7 +57,7 @@ export default function ProductCard({
   hasClaimed,
   teamColor,
   teamIcon,
-  userHasTeam = true, // Por defecto true para no romper otros usos si no se pasa
+  userHasTeam = true,
   onBuy,
   onStartCampaign,
   onContribute,
@@ -99,7 +99,6 @@ export default function ProductCard({
     }
   }
 
-  // Interceptamos los clics de equipo (SOLO para productos de equipo)
   const handleTeamAction = (action: () => void) => {
     if (!userHasTeam && isTeam) {
       setShowTeamModal(true)
@@ -115,10 +114,21 @@ export default function ProductCard({
           ${(!isTeam && !isGlobal) ? 'bg-slate-800 border-slate-700' : 'border'}`}
         style={customStyles}
       >
-        <ProductArtifact iconName={product.image_icon} className="w-16 h-16 shrink-0 mt-1" />
+        {/* SECCIÓN DEL ICONO MODIFICADA */}
+        <div className="relative shrink-0 mt-1 w-16 h-16">
+           <ProductArtifact iconName={product.image_icon} className="w-full h-full" />
+           
+           {/* El botón ahora es un "badge" sobre el icono */}
+           {product.name === 'Caja de Alto Voltaje' && (
+             <div className="absolute -top-1.5 -right-1.5 z-10 scale-[0.8] origin-center shadow-sm rounded-full bg-slate-900">
+               <LootRatesButton minimal={true} iconName={product.image_icon} />
+             </div>
+           )}
+        </div>
         
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
+            {/* TÍTULO REVERTIDO AL ESTADO ORIGINAL (con flex-wrap) */}
             <h3 className="text-white font-bold text-sm sm:text-base leading-tight pr-2 flex items-center gap-2 flex-wrap">
               {isTeam && teamIcon && (
                 <span className="text-lg drop-shadow-md" style={{ color: teamColor || 'white' }}>
@@ -129,12 +139,7 @@ export default function ProductCard({
               {isGlobal && <FaGlobe className="text-blue-400" size={14} />}
               
               <span>{product.name}</span>
-
-              {product.name === 'Caja de Alto Voltaje' && (
-                <div className="shrink-0 -ml-1">
-                  <LootRatesButton minimal={true} iconName={product.image_icon} />
-                </div>
-              )}
+              {/* El botón ya no está aquí */}
             </h3>
             
             <div className={`flex items-center justify-center gap-1.5 px-2 py-1 rounded-md text-xs font-mono font-bold border whitespace-nowrap shrink-0
@@ -234,19 +239,14 @@ export default function ProductCard({
         </div>
       </div>
 
-      {/* MODAL DE ASIGNACIÓN DE EQUIPO */}
       {mounted && showTeamModal && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-2xl animate-in zoom-in-95 duration-300">
-            
-            {/* Cabecera del aviso */}
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-t-3xl p-4 mb-[-20px] pb-8 text-center relative z-0">
               <p className="text-amber-200/80 text-sm mt-1 max-w-md mx-auto">
                 Para participar en colectas de equipo, primero debes descubrir a cuál perteneces
               </p>
             </div>
-
-            {/* Componente principal */}
             <div className="relative z-10">
               <TeamAssignment 
                 onAssignComplete={() => {
@@ -255,8 +255,6 @@ export default function ProductCard({
                 }} 
               />
             </div>
-
-            {/* Botón para cerrar */}
             <button 
               onClick={() => setShowTeamModal(false)} 
               className="absolute -top-4 -right-4 bg-slate-800 p-2 rounded-full border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 shadow-xl transition-colors z-20"

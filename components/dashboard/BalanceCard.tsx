@@ -268,7 +268,7 @@ export default function BalanceCard({
                 <p className="text-indigo-200 text-xs mt-0.5 truncate">{initialFullName}</p>
                 
                 {groupName && (
-                  <p className="text-indigo-300/70 text-[10px] uppercase font-bold tracking-wide mt-1 truncate border-l-2 border-indigo-400/30 pl-2">
+                  <p className="text-indigo-300/70 text-[10px] uppercase font-bold tracking-wide mt-1 border-l-2 border-indigo-400/30 pl-2 leading-tight">
                     {groupName}
                   </p>
                 )}
