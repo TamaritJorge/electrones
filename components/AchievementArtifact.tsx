@@ -13,7 +13,10 @@ import {
   FaTrophy,
   FaCoins,
   FaCheckCircle,
-  FaWifi // <-- Añadido el icono de Wifi para la interferencia
+  FaWifi,
+  FaMedal,       // <-- Para Superconductor
+  FaCrown,       // <-- Para Electrón Legendario
+  FaNetworkWired // <-- Para Red Maestra
 } from 'react-icons/fa'
 
 interface AchievementArtifactProps {
@@ -131,11 +134,38 @@ export default function AchievementArtifact({ iconName, className = "w-16 h-16" 
         </BadgeBase>
       )
       
-    // 👇 --- NUEVO LOGRO: INTERFERENCIA --- 👇
+    // --- INTERFERENCIA ---
     case 'achv_interference':
       return (
         <BadgeBase colorClass="border-fuchsia-600 bg-fuchsia-950/80" glowClass="bg-fuchsia-600" className={className}>
           <FaWifi className="text-fuchsia-400 w-1/2 h-1/2 drop-shadow-[0_0_10px_rgba(217,70,239,0.9)] animate-pulse" />
+        </BadgeBase>
+      )
+
+    // 👇 --- NUEVOS LOGROS MENSUALES (RANKINGS) --- 👇
+    
+    // Superconductor (Top 1 Individual)
+    case 'achv_rank_top1':
+      return (
+        <BadgeBase colorClass="border-yellow-300 bg-yellow-900/60" glowClass="bg-yellow-300" className={className}>
+          <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/20 to-yellow-200/20 z-0"></div>
+          <FaMedal className="text-yellow-300 w-1/2 h-1/2 drop-shadow-[0_0_15px_rgba(253,224,71,1)] z-10 animate-pulse" />
+        </BadgeBase>
+      )
+
+    // Electrón Legendario (Top 10 Individual)
+    case 'achv_rank_legend':
+      return (
+        <BadgeBase colorClass="border-purple-400 bg-purple-950/80" glowClass="bg-purple-500" className={className}>
+          <FaCrown className="text-purple-300 w-1/2 h-1/2 drop-shadow-[0_0_12px_rgba(192,132,252,0.9)] z-10" />
+        </BadgeBase>
+      )
+
+    // Red Maestra (Top 1 Equipo)
+    case 'achv_team_top1':
+      return (
+        <BadgeBase colorClass="border-teal-400 bg-teal-950/80" glowClass="bg-teal-400" className={className}>
+          <FaNetworkWired className="text-teal-300 w-1/2 h-1/2 drop-shadow-[0_0_12px_rgba(45,212,191,0.9)] z-10" />
         </BadgeBase>
       )
 
