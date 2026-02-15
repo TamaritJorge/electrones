@@ -220,7 +220,7 @@ const LeagueSection = ({ config, players, expandedLeague, setExpandedLeague, cur
                   {config.name}
                 </h4>
                 <p className="text-slate-400 text-xs font-semibold">
-                  {players.length} Agentes
+                  {players.length} Alumnos
                 </p>
              </div>
           </div>

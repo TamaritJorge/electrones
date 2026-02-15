@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { FaTrophy, FaBolt, FaBoxOpen, FaSearch, FaCompass, FaStar, FaUserFriends, FaChevronDown, FaChevronUp, FaLock } from 'react-icons/fa'
+import { FaTrophy, FaBolt, FaBoxOpen, FaSearch, FaCompass, FaStar, FaUserFriends, FaChevronDown, FaChevronUp, FaLock, FaUsers, FaUserShield } from 'react-icons/fa'
 import AchievementArtifact from '@/components/AchievementArtifact'
 
 interface ShopProduct {
@@ -25,6 +25,7 @@ type Achievement = {
 type MergedAchievement = Achievement & {
   isUnlocked: boolean
   unlockedAt?: string
+  unlockedCount?: number 
 }
 
 const CATEGORY_CONFIG = {
@@ -37,6 +38,7 @@ const CATEGORY_CONFIG = {
 export default function AchievementsPage() {
   const [achievements, setAchievements] = useState<MergedAchievement[]>([])
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({
     constancia: true,
     cooperacion: true,
@@ -48,8 +50,21 @@ export default function AchievementsPage() {
 
   useEffect(() => {
     async function fetchAchievements() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setLoading(false)
+        return
+      }
+      const user = session.user
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      
+      const userIsAdmin = profile?.role === 'admin'
+      setIsAdmin(userIsAdmin)
 
       const { data: allAchievements } = await supabase
         .from('achievements')
@@ -61,22 +76,37 @@ export default function AchievementsPage() {
         .select('achievement_id, unlocked_at')
         .eq('user_id', user.id)
 
+      let achievementCounts: Record<string, number> = {}
+      if (userIsAdmin) {
+        const { data: allUserAchvs } = await supabase
+          .from('user_achievements')
+          .select('achievement_id')
+        
+        if (allUserAchvs) {
+          allUserAchvs.forEach(ua => {
+            achievementCounts[ua.achievement_id] = (achievementCounts[ua.achievement_id] || 0) + 1
+          })
+        }
+      }
+
       if (allAchievements) {
         const unlockedIds = new Set(userAchievements?.map(ua => ua.achievement_id))
         const merged = allAchievements.map(achv => ({
           ...achv,
           isUnlocked: unlockedIds.has(achv.id),
-          unlockedAt: userAchievements?.find(ua => ua.achievement_id === achv.id)?.unlocked_at
+          unlockedAt: userAchievements?.find(ua => ua.achievement_id === achv.id)?.unlocked_at,
+          unlockedCount: userIsAdmin ? (achievementCounts[achv.id] || 0) : undefined
         }))
         setAchievements(merged)
       }
       setLoading(false)
     }
+    
     fetchAchievements()
   }, [])
 
-  const toggleCat = (cat: string, hasUnlocked: boolean) => {
-    if (!hasUnlocked) return; // No expandir si está vacía
+  const toggleCat = (cat: string, canExpand: boolean) => {
+    if (!canExpand) return; 
     setExpandedCats(prev => ({ ...prev, [cat]: !prev[cat] }))
   }
 
@@ -95,9 +125,14 @@ export default function AchievementsPage() {
     <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         
-        {/* CABECERA CON PROGRESO TOTAL */}
+        {/* CABECERA */}
         <div className="mb-10 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-6 bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-800 shadow-xl">
           <div>
+            {isAdmin && (
+              <div className="bg-red-500/20 text-red-400 text-[10px] uppercase font-black px-3 py-1 rounded-full border border-red-500/30 flex items-center gap-2 mb-3 w-fit mx-auto md:mx-0">
+                <FaUserShield size={12} /> Vista Admin
+              </div>
+            )}
             <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600 mb-2 flex items-center gap-3 justify-center md:justify-start">
               <FaTrophy className="text-yellow-500" /> 
               Sala de Trofeos
@@ -107,15 +142,21 @@ export default function AchievementsPage() {
           
           <div className="w-full md:w-64 bg-slate-950 p-4 rounded-xl border border-slate-800">
             <div className="flex justify-between text-sm mb-2 font-bold font-mono">
-              <span className="text-slate-300 uppercase tracking-tighter">Progreso Global</span>
-              <span className="text-yellow-400">{totalUnlocked} / {totalAvailable}</span>
+              <span className="text-slate-300 uppercase tracking-tighter">
+                {isAdmin ? 'Total Creados' : 'Progreso Global'}
+              </span>
+              <span className="text-yellow-400">
+                {isAdmin ? totalAvailable : `${totalUnlocked} / ${totalAvailable}`}
+              </span>
             </div>
-            <div className="w-full bg-slate-800 rounded-full h-3">
-              <div 
-                className="bg-gradient-to-r from-yellow-500 to-amber-500 h-3 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(234,179,8,0.3)]" 
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
+            {!isAdmin && (
+              <div className="w-full bg-slate-800 rounded-full h-3">
+                <div 
+                  className="bg-gradient-to-r from-yellow-500 to-amber-500 h-3 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(234,179,8,0.3)]" 
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -123,53 +164,58 @@ export default function AchievementsPage() {
         {orderedCategories.map((catKey) => {
           const allInCat = achievements.filter(a => a.category === catKey);
           const unlockedInCat = allInCat.filter(a => a.isUnlocked);
-          const hasUnlocked = unlockedInCat.length > 0;
+          
+          const itemsToDisplay = isAdmin ? allInCat : unlockedInCat;
+          const canExpand = isAdmin ? allInCat.length > 0 : unlockedInCat.length > 0;
           
           if (allInCat.length === 0) return null;
 
           return (
             <div key={catKey} className={`mb-6 overflow-hidden rounded-2xl border transition-all ${
-              hasUnlocked ? 'border-slate-800 bg-slate-900/50' : 'border-slate-900 bg-slate-950/40 opacity-60'
+              canExpand ? 'border-slate-800 bg-slate-900/50' : 'border-slate-900 bg-slate-950/40 opacity-60'
             }`}>
               {/* HEADER DE SECCIÓN */}
               <button 
-                onClick={() => toggleCat(catKey, hasUnlocked)}
-                disabled={!hasUnlocked}
-                className={`w-full flex items-center gap-4 p-5 transition-colors ${hasUnlocked ? 'hover:bg-slate-800/50 cursor-pointer' : 'cursor-not-allowed'}`}
+                onClick={() => toggleCat(catKey, canExpand)}
+                disabled={!canExpand}
+                className={`w-full flex items-center gap-4 p-5 transition-colors ${canExpand ? 'hover:bg-slate-800/50 cursor-pointer' : 'cursor-not-allowed'}`}
               >
-                <div className={`p-2 rounded-lg ${hasUnlocked ? CATEGORY_CONFIG[catKey].bg + ' ' + CATEGORY_CONFIG[catKey].color : 'bg-slate-900 text-slate-600'}`}>
-                  {hasUnlocked ? CATEGORY_CONFIG[catKey].icon : <FaLock />}
+                <div className={`p-2 rounded-lg ${canExpand ? CATEGORY_CONFIG[catKey].bg + ' ' + CATEGORY_CONFIG[catKey].color : 'bg-slate-900 text-slate-600'}`}>
+                  {canExpand ? CATEGORY_CONFIG[catKey].icon : <FaLock />}
                 </div>
                 <div className="flex flex-col items-start">
-                  <span className={`font-bold text-lg ${hasUnlocked ? CATEGORY_CONFIG[catKey].color : 'text-slate-500'}`}>
+                  <span className={`font-bold text-lg ${canExpand ? CATEGORY_CONFIG[catKey].color : 'text-slate-500'}`}>
                     {CATEGORY_CONFIG[catKey].label}
                   </span>
                   <span className="text-xs font-mono text-slate-500">
-                    {unlockedInCat.length} / {allInCat.length} COMPLETADOS
+                    {isAdmin ? `${allInCat.length} LOGROS DISPONIBLES` : `${unlockedInCat.length} / ${allInCat.length} COMPLETADOS`}
                   </span>
                 </div>
                 
                 {/* BARRA DE PROGRESO DE CATEGORÍA */}
-                <div className="hidden sm:block flex-grow max-w-[200px] h-1 bg-slate-800/50 rounded-full mx-6">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-700 ${hasUnlocked ? CATEGORY_CONFIG[catKey].color.replace('text', 'bg') : 'bg-slate-700'}`}
-                    style={{ width: `${(unlockedInCat.length / allInCat.length) * 100}%` }}
-                  />
-                </div>
+                {!isAdmin && (
+                  <div className="hidden sm:block flex-grow max-w-[200px] h-1 bg-slate-800/50 rounded-full mx-6">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-700 ${canExpand ? CATEGORY_CONFIG[catKey].color.replace('text', 'bg') : 'bg-slate-700'}`}
+                      style={{ width: `${(unlockedInCat.length / allInCat.length) * 100}%` }}
+                    />
+                  </div>
+                )}
 
                 <div className="ml-auto text-slate-600">
-                  {hasUnlocked ? (expandedCats[catKey] ? <FaChevronUp /> : <FaChevronDown />) : null}
+                  {canExpand ? (expandedCats[catKey] ? <FaChevronUp /> : <FaChevronDown />) : null}
                 </div>
               </button>
 
-              {/* LOGROS (Solo si hay desbloqueados y está expandido) */}
-              {hasUnlocked && expandedCats[catKey] && (
+              {/* LOGROS */}
+              {canExpand && expandedCats[catKey] && (
                 <div className="p-6 bg-slate-950/40 border-t border-slate-800/50">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {unlockedInCat.map((achv) => (
+                    {itemsToDisplay.map((achv) => (
                       <div 
                         key={achv.id} 
-                        className="p-5 rounded-xl border border-slate-700 bg-slate-800/30 flex flex-col items-center text-center shadow-lg group hover:border-yellow-500/30 transition-all"
+                        // Eliminada la lógica de opacidad y escala de grises. Ahora todos brillan.
+                        className="p-5 rounded-xl border border-slate-700 bg-slate-800/30 flex flex-col items-center text-center shadow-lg group transition-all hover:border-yellow-500/30"
                       >
                         <div className="mb-4 transform group-hover:scale-110 transition-transform duration-300">
                           <AchievementArtifact iconName={achv.icon_name} className="w-16 h-16" />
@@ -181,7 +227,7 @@ export default function AchievementsPage() {
                           {achv.description}
                         </p>
                         
-                        <div className="flex gap-2 mt-4">
+                        <div className="flex gap-2 mt-4 flex-wrap justify-center w-full">
                           {achv.reward_electrons > 0 && (
                             <div className="bg-blue-500/10 text-blue-400 text-[10px] px-2 py-1 rounded border border-blue-500/20 font-bold flex items-center gap-1">
                               <FaBolt size={8} /> {achv.reward_electrons}
@@ -190,6 +236,14 @@ export default function AchievementsPage() {
                           {achv.reward_product_id && (
                             <div className="bg-purple-500/10 text-purple-400 text-[10px] px-2 py-1 rounded border border-purple-500/20 font-bold flex items-center gap-1">
                               <FaBoxOpen size={8} /> {achv.shop_products?.name || 'Item'}
+                            </div>
+                          )}
+                          
+                          {/* CONTADOR DE ALUMNOS (Solo Admin) */}
+                          {isAdmin && (
+                            <div className="bg-slate-900 text-slate-300 text-[10px] px-2 py-1 rounded border border-slate-700 font-bold flex items-center gap-1 w-full justify-center mt-1">
+                              <FaUsers size={10} className="text-slate-400" /> 
+                              {achv.unlockedCount} {achv.unlockedCount === 1 ? 'alumno' : 'alumnos'}
                             </div>
                           )}
                         </div>
