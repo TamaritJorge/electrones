@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { FaArrowLeft, FaChartBar } from 'react-icons/fa'
 import KpiGrid from '@/components/admin/stats/KpiGrid'
+import CrowdfundingStats from '@/components/admin/stats/CrowdfundingStats'
+import MetricsCharts from '@/components/admin/stats/MetricsCharts'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,21 +45,14 @@ export default async function AdminStatsPage() {
         {/* 1. COMPONENTE DE KPIs */}
         <KpiGrid />
 
-        {/* PLACEHOLDERS PARA LOS SIGUIENTES PASOS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-          
-          {/* ZONA 2: Crowdfundings */}
-          <div className="bg-slate-900/50 border border-slate-800 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center min-h-[250px] text-slate-500">
-            <p>Componente: Estado de Crowdfundings</p>
-            <span className="text-xs mt-2">(Próximo paso)</span>
-          </div>
+        {/* 2. ZONA CROWDFUNDINGS (Ocupa todo el ancho ahora) */}
+        <div className="mt-8">
+          <CrowdfundingStats />
+        </div>
 
-          {/* ZONA 3: Gráficas Temporales */}
-          <div className="bg-slate-900/50 border border-slate-800 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center min-h-[250px] text-slate-500">
-            <p>Componente: Gráficas Temporales</p>
-            <span className="text-xs mt-2">(Próximo paso)</span>
-          </div>
-
+        {/* 3. ZONA GRÁFICAS TEMPORALES (Ocupa todo el ancho) */}
+        <div className="mt-8">
+          <MetricsCharts />
         </div>
 
       </div>

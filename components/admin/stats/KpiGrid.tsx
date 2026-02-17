@@ -69,7 +69,7 @@ export default async function KpiGrid() {
         <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">Métricas Generales</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiCard icon={<FaUsers className="text-blue-400" />} value={totalStudents} label="Alumnos" />
-          <KpiCard icon={<FaBolt className="text-yellow-400" />} value={totalElectrons} label="⚡ Circulación" />
+          <KpiCard icon={<FaBolt className="text-yellow-400" />} value={totalElectrons} label="En circulación" />
           <KpiCard icon={<FaTrophy className="text-purple-400" />} value={totalAchievements || 0} label="Logros" />
           <KpiCard icon={<FaShoppingCart className="text-emerald-400" />} value={totalPurchases || 0} label="Compras" />
         </div>
