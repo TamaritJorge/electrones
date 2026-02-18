@@ -5,6 +5,7 @@ import { FaArrowLeft, FaChartBar } from 'react-icons/fa'
 import KpiGrid from '@/components/admin/stats/KpiGrid'
 import CrowdfundingStats from '@/components/admin/stats/CrowdfundingStats'
 import MetricsCharts from '@/components/admin/stats/MetricsCharts'
+import EconomyCharts from '@/components/admin/stats/EconomyCharts'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,6 +54,7 @@ export default async function AdminStatsPage() {
         {/* 3. ZONA GRÁFICAS TEMPORALES (Ocupa todo el ancho) */}
         <div className="mt-8">
           <MetricsCharts />
+          <EconomyCharts />
         </div>
 
       </div>
