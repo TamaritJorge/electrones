@@ -119,7 +119,7 @@ export default function ProductCard({
            <ProductArtifact iconName={product.image_icon} className="w-full h-full" />
            
            {/* El botón ahora es un "badge" sobre el icono */}
-           {product.name === 'Caja de Alto Voltaje' && (
+           {product.category === 'lootbox' && (
              <div className="absolute -top-1.5 -right-1.5 z-10 scale-[0.8] origin-center shadow-sm rounded-full bg-slate-900">
                <LootRatesButton minimal={true} iconName={product.image_icon} />
              </div>

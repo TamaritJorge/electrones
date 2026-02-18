@@ -86,14 +86,16 @@ export default function ProductArtifact({ iconName, className = "w-16 h-16" }: P
         {/* HALO CENTRAL */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-green-500/10 blur-xl rounded-full"></div>
 
-        {/* EL SÍMBOLO DE TIERRA (Geometría pura) */}
-        <div className="relative flex flex-col items-center justify-center translate-y-1 gap-[3px]">
-            <div className="relative w-[3px] h-7 bg-yellow-400/90 shadow-[0_0_8px_rgba(250,204,21,0.5)] rounded-t-sm">
+        {/* EL SÍMBOLO DE TIERRA (Geometría pura y centrada) */}
+        <div className="relative flex flex-col items-center justify-center w-full h-full z-10">
+            <div className="relative w-[3px] h-6 bg-yellow-400/90 shadow-[0_0_8px_rgba(250,204,21,0.5)] rounded-t-sm mb-[2px]">
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-b from-white to-transparent opacity-60"></div>
             </div>
-            <div className="w-8 h-[3px] bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-            <div className="w-5 h-[3px] bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-            <div className="w-2 h-[3px] bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+            <div className="flex flex-col items-center gap-[3px]">
+              <div className="w-8 h-[3px] bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+              <div className="w-5 h-[3px] bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+              <div className="w-2 h-[3px] bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+            </div>
         </div>
 
         {/* DETALLE INFERIOR */}

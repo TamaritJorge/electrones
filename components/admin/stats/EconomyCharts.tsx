@@ -11,12 +11,14 @@ import { FaCalendarAlt, FaCoins, FaTrophy, FaUsers,FaChartLine } from 'react-ico
 type TimeRange = 'week' | 'month' | 'year'
 
 // Tooltip Personalizado para la gráfica de Correlación
+// Tooltip Personalizado para la gráfica de Correlación
 const ScatterTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
       <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
-        <p className="font-bold text-white mb-2 border-b border-slate-700 pb-1">{data.name}</p>
+        <p className="font-bold text-white mb-1 border-b border-slate-700 pb-1">{data.name}</p>
+        <p className="text-slate-300 text-xs mb-2 italic">{data.student_group}</p>
         <p className="text-eab308 text-sm font-semibold text-yellow-400">
           Electrones: {data.current_balance}
         </p>
@@ -52,15 +54,23 @@ export default function GamificationCharts() {
       // 1. PROFILES: Top 5 Ricos + Correlación Asistencia/Economía
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('nickname, full_name, current_balance, attendance_count')
+        .select('nickname, full_name, current_balance, attendance_count, student_group')
         .neq('role', 'admin') 
 
       if (profiles) {
-        const formattedProfiles = profiles.map(p => ({
-          name: p.nickname || p.full_name?.split(' ')[0] || 'Anónimo',
-          current_balance: p.current_balance || 0,
-          attendance_count: p.attendance_count || 0
-        }))
+        const formattedProfiles = profiles.map(p => {
+          // Limpiamos el nombre del grado
+          let degree = p.student_group || 'Desconocido'
+          // Quita "Grado en ingeniería " ignorando mayúsculas/minúsculas
+          degree = degree.replace(/Grado en [Ii]ngenier[íi]a\s*/g, '').trim()
+          
+          return {
+            name: p.nickname || p.full_name?.split(' ')[0] || 'Anónimo',
+            current_balance: p.current_balance || 0,
+            attendance_count: p.attendance_count || 0,
+            student_group: degree.charAt(0).toUpperCase() + degree.slice(1) // Capitaliza la primera letra
+          }
+        })
 
         // Ordenamos y sacamos los 5 más ricos
         const sortedRich = [...formattedProfiles].sort((a, b) => b.current_balance - a.current_balance).slice(0, 5)
@@ -207,7 +217,8 @@ export default function GamificationCharts() {
             {correlationData.length > 0 ? (
               <div className="w-full h-[250px] relative">
                 <ResponsiveContainer width="100%" height={250} minWidth={0}>
-                  <ScatterChart margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
+                  {/* Aumentamos el margen 'bottom' a 40 para hacer hueco */}
+                  <ScatterChart margin={{ top: 10, right: 20, bottom: 40, left: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis 
                       type="number" 
@@ -216,6 +227,7 @@ export default function GamificationCharts() {
                       stroke="#94a3b8" 
                       fontSize={12}
                       tickLine={false}
+                      label={{ value: 'Nº de Asistencias', position: 'bottom', offset: 0, fill: '#94a3b8', fontSize: 12 }}
                     />
                     <YAxis 
                       type="number" 
@@ -224,9 +236,28 @@ export default function GamificationCharts() {
                       stroke="#94a3b8" 
                       fontSize={12}
                       tickLine={false}
+                      label={{ value: 'Electrones', angle: -90, position: 'insideLeft', offset: 0, fill: '#94a3b8', fontSize: 12 }}
                     />
                     <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<ScatterTooltip />} />
-                    <Scatter name="Estudiantes" data={correlationData} fill="#3b82f6" />
+                    
+                    {/* Configuramos la leyenda para que se vaya abajo, le damos un poco de margen extra y forzamos el color claro del texto */}
+                    <Legend 
+                      verticalAlign="bottom"
+                      wrapperStyle={{ paddingTop: '20px' }} 
+                      formatter={(value) => <span className="text-slate-300 text-xs font-medium">{value}</span>}
+                    />
+                    
+                    {Array.from(new Set(correlationData.map(d => d.student_group))).map((group, index) => {
+                      const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#a855f7', '#ec4899', '#ef4444', '#06b6d4'];
+                      return (
+                        <Scatter 
+                          key={group} 
+                          name={group} 
+                          data={correlationData.filter(d => d.student_group === group)} 
+                          fill={COLORS[index % COLORS.length]} 
+                        />
+                      )
+                    })}
                   </ScatterChart>
                 </ResponsiveContainer>
               </div>

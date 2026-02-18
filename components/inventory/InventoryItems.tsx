@@ -100,7 +100,7 @@ export default function InventoryItems({ onSwitchToFiles }: InventoryItemsProps)
   }
 
   const isDirectlyUsable = (category: string) => {
-    return category !== 'permanente' && category !== 'lootbox'
+    return category !== 'permanente' && category !== 'lootbox' && category !== 'key'
   }
 
   // Función helper para saber si es una caja de loot real y no la puesta a tierra
@@ -109,9 +109,9 @@ export default function InventoryItems({ onSwitchToFiles }: InventoryItemsProps)
                      item.name.toLowerCase().includes('caja') || 
                      item.image_icon.includes('loot');
                      
-      const isNotPuestaATierra = !item.name.toLowerCase().includes('puesta a tierra');
+      const isNotKey = item.category !== 'key';
       
-      return isLoot && isNotPuestaATierra;
+      return isLoot && isNotKey;
   }
 
   if (loading) {
