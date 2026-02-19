@@ -130,8 +130,7 @@ electrones/
   - [qrcode.react](https://github.com/davidroyer/qrcode.react) - QR code generation
 
 ### Backend & Services
-- **Authentication & Database**: [Supabase](https://supabase.com/) - PostgreSQL + Auth
-For detailed information about the database schema and how to set up Supabase, please refer to the [supabaseData/README.md](supabaseData/README.md) file.
+- **Authentication & Database**: [Supabase](https://supabase.com/) - PostgreSQL + Auth.
 
 ### Utilities
 - **PDF Generation**: [pdf-lib](https://pdfjs.example.com/) - PDF creation
@@ -199,6 +198,7 @@ Electrones uses Supabase (PostgreSQL) to manage:
 - Team assignments and rankings
 - Crowdfunding campaigns
 - QR code activity logs
+For detailed information about the database schema and how to set up Supabase, please refer to the [supabaseData/README.md](supabaseData/README.md) file.
 
 ## 🚀 Deployment
 
