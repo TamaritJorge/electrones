@@ -52,9 +52,9 @@ export default function LoginPage() {
           <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
             Electrones
           </h1>
-          <p className="text-slate-400 text-sm font-medium uppercase tracking-widest">
-            Academia de Agentes UJI
-          </p>
+          {/*<p className="text-slate-400 text-sm font-medium uppercase tracking-widest">
+            Electrotencia gamificada para estudiantes de la UJI
+          </p>*/}
         </div>
 
         {/* Cuerpo / Descripción */}
@@ -63,7 +63,7 @@ export default function LoginPage() {
           {/* Pequeña descripción de características */}
           <div className="space-y-3 text-sm text-slate-300">
             <p className="text-center mb-4 text-slate-400">
-              Bienvenido a la plataforma de gamificación para electrotecnia.
+              Electrotencia interactiva para estudiantes de la UJI.
             </p>
             
             <div className="flex items-center gap-3 bg-slate-800/40 p-3 rounded-lg border border-slate-700/50">
