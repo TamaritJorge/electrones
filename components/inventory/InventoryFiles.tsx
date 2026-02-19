@@ -53,16 +53,16 @@ export default function InventoryFiles() {
         // 2. Cargar Inventario
         const { data: inventory, error } = await supabase
             .from('user_inventory')
-            .select('id, shop_products!inner(name)') 
+            .select('id, shop_products!inner(name, category)') 
             .eq('user_id', user.id)
             .eq('is_consumed', false)
-            .in('shop_products.name', ['Caja de Alto Voltaje', 'Puesta a Tierra'])
+            .in('shop_products.category', ['lootbox', 'key'])
         
         if (error) console.error("Error inventario:", error)
 
         if (inventory) {
-            const boxes = inventory.filter((i: any) => i.shop_products.name === 'Caja de Alto Voltaje').length
-            const groundings = inventory.filter((i: any) => i.shop_products.name === 'Puesta a Tierra').length
+            const boxes = inventory.filter((i: any) => i.shop_products.category === 'lootbox').length
+            const groundings = inventory.filter((i: any) => i.shop_products.category === 'key').length
             setLootboxCount(boxes)
             setGroundingCount(groundings)
         }
