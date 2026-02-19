@@ -257,4 +257,4 @@ For bugs, feature requests, or questions, please open an issue on the [GitHub re
 
 ---
 
-**Built with ⚡ for educators and students passionate about electrical engineering.**
+**Built for educators and students passionate about electrical engineering.**
