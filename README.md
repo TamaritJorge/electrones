@@ -242,7 +242,7 @@ This project is private. Please contact the maintainers for licensing questions.
 
 ## 👨‍💼 Maintainer
 
-**Jorge Tamarit** - [@TamaritJorge](https://github.com/TamaritJorge)
+**Jorge Tamarit** - [@TamaritJorge](https://github.com/TamaritJorge) [Institutional Website](https://www.uji.es/institucional/estructura/personal?p_departamento=2102&p_profesor=233411)
 
 ## 📚 Resources & Documentation
 
