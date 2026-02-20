@@ -1957,7 +1957,7 @@ begin
   end if;
 
   -- ✅ Creación del perfil
-  insert into public.profiles (id, email, full_name, nickname, avatar_url, balance)
+  insert into public.profiles (id, email, full_name, nickname, avatar_url, current_balance)
   values (
     new.id,
     new.email,
