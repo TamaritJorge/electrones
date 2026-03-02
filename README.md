@@ -2,6 +2,8 @@
 
 Electrones is a **virtual wallet and reward system** designed to gamify the teaching of electrical engineering (electrotecnia). Built with modern web technologies, it helps educators motivate students through a points-based economy, achievements, leaderboards, and team-based competitions.
 
+![Alt text](\ElectronesSummary.png)
+
 ## ✨ Key Features
 
 ### For Students
