@@ -240,7 +240,7 @@ Please ensure your code:
 
 ## 📝 License
 
-This project is released as open-source software under the [MIT License](LICENSE) to support the educational technology community. We encourage educators and developers to adopt, adapt, and contribute to the Electrones platform. 
+This project is released as open-source software under the [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) to support the educational technology community. We encourage educators and developers to adopt, adapt, and contribute to the Electrones platform. 
 
 For questions regarding specific institutional deployments, academic collaborations, or custom integrations, please contact the maintainers.
 
