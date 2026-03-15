@@ -79,7 +79,7 @@ export default function IndividualLeaderboard() {
 
       // Generar Bots
       const TEAM_IDS = ['tesla', 'maxwell', 'ayrton', 'clarke'];
-      const fakeUsers = generateFakeUsers(150).map((u, i) => ({
+      const fakeUsers = generateFakeUsers(0).map((u, i) => ({
          user_id: u.user_id,
          nickname: u.nickname,
          avatar_url: u.avatar_url,
@@ -112,12 +112,18 @@ export default function IndividualLeaderboard() {
     }
   }
 
-  // --- LÓGICA DE CORTES ---
+// --- LÓGICA DE CORTES ---
   const { cutLegends, cutTrifasica, cutAlterna } = getLeagueThresholds(entries.length)
-  const groupLegends = entries.slice(0, cutLegends);
-  const groupTrifasica = entries.slice(cutLegends, Math.max(cutLegends, cutTrifasica));
-  const groupAlterna = entries.slice(Math.max(cutLegends, cutTrifasica), cutAlterna);
-  const groupContinua = entries.slice(cutAlterna);
+
+  // Aseguramos que los índices nunca retrocedan para evitar duplicados con pocos usuarios
+  const startTrifasica = cutLegends;
+  const startAlterna = Math.max(startTrifasica, cutTrifasica);
+  const startContinua = Math.max(startAlterna, cutAlterna);
+
+  const groupLegends = entries.slice(0, startTrifasica);
+  const groupTrifasica = entries.slice(startTrifasica, startAlterna);
+  const groupAlterna = entries.slice(startAlterna, startContinua);
+  const groupContinua = entries.slice(startContinua);
 
   if (loading) {
      return (

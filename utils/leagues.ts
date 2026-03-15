@@ -42,10 +42,19 @@ export const LEAGUE_CONFIG = {
 
 // 2. Lógica de cálculo de cortes
 export function getLeagueThresholds(totalPlayers: number) {
+  // 1. Separar a las leyendas (Top 10, o el total si hay menos de 10)
+  const cutLegends = Math.min(10, totalPlayers)
+
+  // 2. Calcular cuántos alumnos quedan después de quitar a las leyendas
+  const remainingPlayers = totalPlayers - cutLegends
+
+  // 3. Aplicar porcentajes SOLO a los restantes y sumarlo al corte anterior
   return {
-    cutLegends: 10, // Top 10 fijo
-    cutTrifasica: Math.floor(totalPlayers * 0.2), // Top 20%
-    cutAlterna: Math.floor(totalPlayers * 0.5)    // Top 50%
+    cutLegends, 
+    // 20% de los alumnos restantes se van a Trifásica
+    cutTrifasica: cutLegends + Math.floor(remainingPlayers * 0.2), 
+    // 50% de los alumnos restantes se van a Alterna (acumulado)
+    cutAlterna: cutLegends + Math.floor(remainingPlayers * 0.5)    
   }
 }
 
@@ -54,8 +63,9 @@ export function getLeagueByRank(rank: number, totalPlayers: number) {
   const { cutLegends, cutTrifasica, cutAlterna } = getLeagueThresholds(totalPlayers)
 
   if (rank <= cutLegends) return LEAGUE_CONFIG.legends
-  if (rank <= Math.max(cutLegends, cutTrifasica)) return LEAGUE_CONFIG.trifasica
+  if (rank <= cutTrifasica) return LEAGUE_CONFIG.trifasica
   if (rank <= cutAlterna) return LEAGUE_CONFIG.alterna
+  
   return LEAGUE_CONFIG.continua
 }
 
