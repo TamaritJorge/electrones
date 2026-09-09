@@ -150,22 +150,36 @@ export default function MetricsCharts() {
       return isAfterDate && matchesType && validAttendees.length > 0
     })
 
-    const groupedData: Record<string, any> = {}
+    // Un mismo día puede tener varias sesiones (p.ej. se proyecta el QR dos veces en la misma clase).
+    // Deduplicamos por user_id dentro de cada día real para no contar dos veces al mismo alumno.
+    const dailyAttendees: Record<string, Record<string, Set<string>>> = {}
 
     filteredData.forEach(session => {
-      const d = new Date(session.created_at)
-      let dateKey = timeRange === 'year' 
+      const dayKey = session.created_at.split('T')[0]
+      const groupShortName = formatGroupName(session.group_name)
+      const validAttendees = session.attendance?.filter((a: any) => a.profiles?.role !== 'admin') || []
+
+      if (!dailyAttendees[dayKey]) dailyAttendees[dayKey] = {}
+      if (!dailyAttendees[dayKey][groupShortName]) dailyAttendees[dayKey][groupShortName] = new Set()
+
+      validAttendees.forEach((a: any) => dailyAttendees[dayKey][groupShortName].add(a.user_id))
+    })
+
+    const groupedData: Record<string, any> = {}
+
+    Object.entries(dailyAttendees).forEach(([dayKey, groups]) => {
+      const d = new Date(dayKey)
+      const dateKey = timeRange === 'year'
         ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-        : session.created_at.split('T')[0] 
+        : dayKey
 
       if (!groupedData[dateKey]) {
         groupedData[dateKey] = { rawDate: dateKey }
       }
 
-      const groupShortName = formatGroupName(session.group_name)
-      const validAttendees = session.attendance?.filter((a: any) => a.profiles?.role !== 'admin') || []
-
-      groupedData[dateKey][groupShortName] = (groupedData[dateKey][groupShortName] || 0) + validAttendees.length
+      Object.entries(groups).forEach(([groupShortName, userSet]) => {
+        groupedData[dateKey][groupShortName] = (groupedData[dateKey][groupShortName] || 0) + userSet.size
+      })
     })
 
     const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
