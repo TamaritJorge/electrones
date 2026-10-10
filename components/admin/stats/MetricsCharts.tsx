@@ -19,7 +19,43 @@ function formatGroupName(grade: string) {
   if (cleaned.length > 0) {
     cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
   }
-  return cleaned || grade 
+  return cleaned || grade
+}
+
+const MONTH_NAMES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+
+// Clave YYYY-MM-DD en hora local (evita desfases por UTC al comparar fechas)
+function toDayKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// Inicio del periodo como ventana móvil: 7 días, 30 días o 1 año hacia atrás desde hoy
+function getStartKey(range: TimeRange) {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  if (range === 'week') d.setDate(d.getDate() - 7)
+  if (range === 'month') d.setDate(d.getDate() - 30)
+  if (range === 'year') d.setFullYear(d.getFullYear() - 1)
+  return toDayKey(d)
+}
+
+function formatDayKey(key: string) {
+  const [, m, day] = key.split('-')
+  return `${parseInt(day)} ${MONTH_NAMES[parseInt(m) - 1]}`
+}
+
+// Supabase limita cada respuesta a 1000 filas: paginamos para no perder los datos más recientes
+async function fetchAllRows(buildQuery: (from: number, to: number) => any) {
+  const PAGE = 1000
+  const rows: any[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await buildQuery(from, from + PAGE - 1)
+    if (error) { console.error(error); break }
+    if (!data?.length) break
+    rows.push(...data)
+    if (data.length < PAGE) break
+  }
+  return rows
 }
 
 export default function MetricsCharts() {
@@ -40,33 +76,38 @@ export default function MetricsCharts() {
     async function fetchData() {
       const supabase = createClient()
       
-      const oneYearAgo = new Date()
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-      const dateString = oneYearAgo.toISOString().split('T')[0]
+      // Margen de un día extra para cubrir diferencias de zona horaria
+      const since = new Date()
+      since.setFullYear(since.getFullYear() - 1)
+      since.setDate(since.getDate() - 1)
+      const dateString = toDayKey(since)
 
-      const { data: metricsData } = await supabase
+      const metricsData = await fetchAllRows((from, to) => supabase
         .from('site_metrics')
         .select('visit_date, page_path, visit_count')
         .gte('visit_date', dateString)
+        .order('visit_date', { ascending: true })
+        .range(from, to))
 
-      if (metricsData) setRawMetricsData(metricsData)
+      setRawMetricsData(metricsData)
 
-      const { data: attendanceData, error } = await supabase
+      const attendanceData = await fetchAllRows((from, to) => supabase
         .from('class_sessions')
         .select(`
           id,
           group_name,
           session_type,
           created_at,
-          attendance ( 
+          attendance (
             user_id,
             profiles ( role )
           )
         `)
         .gte('created_at', dateString)
+        .order('created_at', { ascending: true })
+        .range(from, to))
 
-      if (error) console.error("Error cargando sesiones:", error)
-      if (attendanceData) {
+      if (attendanceData.length) {
         setRawAttendanceData(attendanceData)
         const groups = new Set(attendanceData.map(s => formatGroupName(s.group_name)))
         setAvailableGroups(Array.from(groups))
@@ -80,23 +121,14 @@ export default function MetricsCharts() {
 
   // 2. Procesar Uso
   useEffect(() => {
-    if (!rawMetricsData.length) return
+    const startKey = getStartKey(timeRange)
 
-    const now = new Date()
-    const startDate = new Date()
-    
-    if (timeRange === 'week') startDate.setDate(now.getDate() - 7)
-    if (timeRange === 'month') startDate.setDate(now.getDate() - 30)
-    if (timeRange === 'year') startDate.setFullYear(now.getFullYear() - 1)
-
-    const filteredData = rawMetricsData.filter(d => new Date(d.visit_date) >= startDate)
+    // visit_date ya es YYYY-MM-DD: comparamos como texto. Siempre por día, también en la vista anual.
+    const filteredData = rawMetricsData.filter(d => d.visit_date >= startKey)
     const groupedData: Record<string, any> = {}
 
     filteredData.forEach(row => {
-      const d = new Date(row.visit_date)
-      let dateKey = timeRange === 'year' 
-        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-        : row.visit_date 
+      const dateKey = row.visit_date
 
       if (!groupedData[dateKey]) {
         groupedData[dateKey] = { rawDate: dateKey, total: 0, home: 0, tienda: 0, ranking: 0, mochila: 0, logros: 0 }
@@ -114,33 +146,19 @@ export default function MetricsCharts() {
       }
     })
 
-    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
     const finalData = Object.values(groupedData)
       .sort((a, b) => a.rawDate.localeCompare(b.rawDate))
-      .map(item => {
-        const d = new Date(item.rawDate)
-        let displayDate = timeRange === 'year'
-          ? monthNames[parseInt(item.rawDate.split('-')[1]) - 1]
-          : `${d.getDate()} ${monthNames[d.getMonth()]}`
-        return { ...item, displayDate }
-      })
+      .map(item => ({ ...item, displayDate: formatDayKey(item.rawDate) }))
 
     setUsageChartData(finalData)
   }, [rawMetricsData, timeRange])
 
   // 3. Procesar Asistencia
   useEffect(() => {
-    if (!rawAttendanceData.length) return
-
-    const now = new Date()
-    const startDate = new Date()
-    
-    if (timeRange === 'week') startDate.setDate(now.getDate() - 7)
-    if (timeRange === 'month') startDate.setDate(now.getDate() - 30)
-    if (timeRange === 'year') startDate.setFullYear(now.getFullYear() - 1)
+    const startKey = getStartKey(timeRange)
 
     const filteredData = rawAttendanceData.filter(session => {
-      const isAfterDate = new Date(session.created_at) >= startDate
+      const isAfterDate = toDayKey(new Date(session.created_at)) >= startKey
       const matchesType = session.session_type?.toLowerCase() === sessionFilter
       
       const validAttendees = session.attendance?.filter(
@@ -155,7 +173,7 @@ export default function MetricsCharts() {
     const dailyAttendees: Record<string, Record<string, Set<string>>> = {}
 
     filteredData.forEach(session => {
-      const dayKey = session.created_at.split('T')[0]
+      const dayKey = toDayKey(new Date(session.created_at))
       const groupShortName = formatGroupName(session.group_name)
       const validAttendees = session.attendance?.filter((a: any) => a.profiles?.role !== 'admin') || []
 
@@ -165,32 +183,15 @@ export default function MetricsCharts() {
       validAttendees.forEach((a: any) => dailyAttendees[dayKey][groupShortName].add(a.user_id))
     })
 
-    const groupedData: Record<string, any> = {}
-
-    Object.entries(dailyAttendees).forEach(([dayKey, groups]) => {
-      const d = new Date(dayKey)
-      const dateKey = timeRange === 'year'
-        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-        : dayKey
-
-      if (!groupedData[dateKey]) {
-        groupedData[dateKey] = { rawDate: dateKey }
-      }
-
-      Object.entries(groups).forEach(([groupShortName, userSet]) => {
-        groupedData[dateKey][groupShortName] = (groupedData[dateKey][groupShortName] || 0) + userSet.size
-      })
-    })
-
-    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-    const finalData = Object.values(groupedData)
-      .sort((a, b) => a.rawDate.localeCompare(b.rawDate))
-      .map(item => {
-        const d = new Date(item.rawDate)
-        let displayDate = timeRange === 'year'
-          ? monthNames[parseInt(item.rawDate.split('-')[1]) - 1]
-          : `${d.getDate()} ${monthNames[d.getMonth()]}`
-        return { ...item, displayDate }
+    // Un punto por día de sesión (sin agrupar por mes en la vista anual)
+    const finalData = Object.entries(dailyAttendees)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dayKey, groups]) => {
+        const item: Record<string, any> = { rawDate: dayKey, displayDate: formatDayKey(dayKey) }
+        Object.entries(groups).forEach(([groupShortName, userSet]) => {
+          item[groupShortName] = userSet.size
+        })
+        return item
       })
 
     setAttendanceChartData(finalData)
@@ -251,12 +252,12 @@ export default function MetricsCharts() {
                 <ResponsiveContainer width="100%" height={250} minWidth={0}>
                   <LineChart data={attendanceChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                    <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                    <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} minTickGap={20} />
                     <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                     <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '0.5rem' }} itemStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
                     {availableGroups.map((group, index) => (
-                      <Line key={group} type="monotone" dataKey={group} name={group} stroke={GROUP_COLORS[index % GROUP_COLORS.length]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#0f172a' }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                      <Line key={group} type="monotone" connectNulls dataKey={group} name={group} stroke={GROUP_COLORS[index % GROUP_COLORS.length]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#0f172a' }} activeDot={{ r: 6, strokeWidth: 0 }} />
                     ))}
                   </LineChart>
                 </ResponsiveContainer>
@@ -287,7 +288,7 @@ export default function MetricsCharts() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                    <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                    <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} minTickGap={20} />
                     <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                     <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '0.5rem' }} />
                     <Area type="monotone" dataKey="total" name="Páginas totales" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" />
@@ -314,7 +315,7 @@ export default function MetricsCharts() {
                 <ResponsiveContainer width="100%" height={300} minWidth={0}>
                   <LineChart data={usageChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                    <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                    <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} minTickGap={20} />
                     <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                     <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '0.5rem' }} />
                     <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
