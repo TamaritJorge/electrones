@@ -1,6 +1,7 @@
 // Ruta: components/leaderboard/PlayerCard.tsx
 import { FaUserCircle, FaTrophy, FaBolt } from 'react-icons/fa'
-import { formatTeam } from '@/utils/teams' 
+import { formatTeam } from '@/utils/teams'
+import PlayerName from './PlayerName'
 
 interface PlayerCardProps {
   rank: number
@@ -120,13 +121,14 @@ export default function PlayerCard({
             {/* Quitamos los max-w fijos. Ahora truncate funciona perfectamente 
               sin importar el tamaño de pantalla 
             */}
-            <span className={`
-              font-bold truncate
-              ${isPodium ? 'text-base text-white' : 'text-sm'}
-              ${isCurrentUser ? 'text-white' : 'text-slate-200'}
-            `}>
-              {nickname}
-            </span>
+            <PlayerName
+              name={nickname}
+              className={`
+                font-bold
+                ${isPodium ? 'text-base text-white' : 'text-sm'}
+                ${isCurrentUser ? 'text-white' : 'text-slate-200'}
+              `}
+            />
             
             {teamVisuals && (
               <div 
