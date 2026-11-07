@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { fetchAllRows } from '@/utils/supabase/fetchAllRows'
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area 
 } from 'recharts'
@@ -42,20 +43,6 @@ function getStartKey(range: TimeRange) {
 function formatDayKey(key: string) {
   const [, m, day] = key.split('-')
   return `${parseInt(day)} ${MONTH_NAMES[parseInt(m) - 1]}`
-}
-
-// Supabase limita cada respuesta a 1000 filas: paginamos para no perder los datos más recientes
-async function fetchAllRows(buildQuery: (from: number, to: number) => any) {
-  const PAGE = 1000
-  const rows: any[] = []
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await buildQuery(from, from + PAGE - 1)
-    if (error) { console.error(error); break }
-    if (!data?.length) break
-    rows.push(...data)
-    if (data.length < PAGE) break
-  }
-  return rows
 }
 
 export default function MetricsCharts() {
@@ -214,12 +201,9 @@ export default function MetricsCharts() {
   return (
     <div className="mb-8 flex flex-col gap-6">
       
-      <div className="flex items-center justify-between bg-slate-900/50 p-2 rounded-xl border border-slate-800">
-        <div className="flex items-center gap-2 px-3 text-slate-400">
-          <FaCalendarAlt />
-          <span className="text-sm font-semibold uppercase tracking-wider">Periodo</span>
-        </div>
-        <div className="flex gap-1">
+      <div className="flex items-center justify-between gap-2 bg-slate-900/50 p-2 rounded-xl border border-slate-800">
+        <FaCalendarAlt className="text-slate-400 shrink-0 ml-2" title="Periodo" />
+        <div className="flex gap-1 min-w-0">
           <TimeButton active={timeRange === 'week'} onClick={() => setTimeRange('week')}>Última Semana</TimeButton>
           <TimeButton active={timeRange === 'month'} onClick={() => setTimeRange('month')}>Último Mes</TimeButton>
           <TimeButton active={timeRange === 'year'} onClick={() => setTimeRange('year')}>Último Año</TimeButton>
@@ -344,7 +328,7 @@ function TimeButton({ children, active, onClick }: { children: React.ReactNode, 
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+      className={`px-2.5 sm:px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
         active 
           ? 'bg-slate-700 text-white shadow-md' 
           : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'

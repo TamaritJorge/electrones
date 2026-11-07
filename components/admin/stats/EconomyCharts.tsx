@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { fetchAllRows } from '@/utils/supabase/fetchAllRows'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, 
   LineChart, Line, ScatterChart, Scatter, AreaChart, Area 
@@ -76,13 +77,17 @@ export default function GamificationCharts() {
       }
 
       // 2. ECONOMÍA: Historial de transacciones
-      const { data: allTx } = await supabase
+      // Se necesita todo el historial para acumular la circulación; paginado para no
+      // quedarnos solo con las 1000 transacciones más antiguas (dejaba vacías semana y mes)
+      const allTx = await fetchAllRows((from, to) => supabase
         .from('transactions')
         .select('amount, created_at, profiles!inner(role)')
         .neq('profiles.role', 'admin')
         .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to))
 
-      if (allTx) {
+      if (allTx.length) {
         const dailyGroups: Record<string, any> = {}
         allTx.forEach(t => {
           const dateKey = t.created_at.split('T')[0]
