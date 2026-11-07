@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { FaUsers, FaBolt, FaTrophy, FaShoppingCart, FaGraduationCap, FaBoxOpen, FaPlug } from 'react-icons/fa'
 import { formatTeam } from '@/utils/teams'
+import KpiDetailCard from './KpiDetailCard'
 
 // --- FUNCIÓN AUXILIAR PARA LIMPIAR EL NOMBRE DEL GRADO ---
 function formatGradeName(grade: string) {
@@ -84,9 +85,10 @@ export default async function KpiGrid() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <KpiCard icon={<FaUsers className="text-blue-400" />} value={totalStudents} label="Alumnos" />
           <KpiCard icon={<FaBolt className="text-yellow-400" />} value={totalElectrons} label="En circulación" />
-          <KpiCard icon={<FaTrophy className="text-purple-400" />} value={totalAchievements || 0} label="Logros" />
-          <KpiCard icon={<FaShoppingCart className="text-emerald-400" />} value={totalPurchases || 0} label="Compras" />
-          <KpiCard icon={<FaBoxOpen className="text-orange-400" />} value={totalLootboxes || 0} label="Cajas Abiertas" />
+          {/* Tarjetas clicables: abren un panel con el detalle */}
+          <KpiDetailCard kind="achievements" icon={<FaTrophy className="text-purple-400" />} value={totalAchievements || 0} label="Logros" />
+          <KpiDetailCard kind="purchases" icon={<FaShoppingCart className="text-emerald-400" />} value={totalPurchases || 0} label="Compras" />
+          <KpiDetailCard kind="lootboxes" icon={<FaBoxOpen className="text-orange-400" />} value={totalLootboxes || 0} label="Cajas Abiertas" />
           <KpiCard icon={<FaPlug className="text-teal-400" />} value={totalGroundings || 0} label="Puestas a Tierra" />
         </div>
       </section>
